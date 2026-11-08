@@ -6,7 +6,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/admin/:path*", "destination": "/admin.html" },
-    { "source": "/((?!assets/|images/|admin-icons/|.*\..*).*)", "destination": "/index.html" }
+    { "source": "/admin/(.*)", "destination": "/admin.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
