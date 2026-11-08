@@ -1,0 +1,164 @@
+/* Live shipment map - used inside the website's tracking pop-up and the admin.
+   Prefixed tj-map and self-contained so the theme's CSS cannot reach in. */
+.tj-mapbox {
+  font-family: 'Public Sans', system-ui, sans-serif;
+  color: #11194e;
+}
+.tj-mapbox .tj-map {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #e8ecf3;
+  border: 1px solid #e3e4ea;
+}
+.tj-mapbox .tj-map__canvas {
+  position: absolute;
+  inset: 0;
+}
+/* the theme sets img { max-width: 100% }, which breaks Google's map tiles */
+.tj-mapbox .tj-map img {
+  max-width: none !important;
+}
+.tj-mapbox .tj-map--empty {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  text-align: center;
+  color: #5b6078;
+  font-size: 14px;
+}
+.tj-mapbox .tj-map__error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  background: #f3f3f6;
+  color: #5b6078;
+  font-size: 14px;
+  z-index: 2;
+}
+.tj-mapbox .tj-map__follow {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 1;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #11194e;
+  font: 600 12.5px 'Public Sans', system-ui, sans-serif;
+  box-shadow: 0 2px 8px rgba(17, 25, 78, 0.25);
+  cursor: pointer;
+}
+.tj-mapbox .tj-map__follow.is-on {
+  background: #11194e;
+  color: #fff;
+}
+
+.tj-mapbox .tj-map__stats {
+  margin-top: 14px;
+}
+.tj-mapbox .tj-map__headline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.tj-mapbox .tj-map__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.tj-mapbox .tj-map__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #8a8fa6;
+  flex-shrink: 0;
+}
+.tj-mapbox .tj-map__state--moving .tj-map__dot {
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+  animation: tj-map-pulse 1.8s infinite;
+}
+.tj-mapbox .tj-map__state--paused .tj-map__dot,
+.tj-mapbox .tj-map__state--arriving .tj-map__dot {
+  background: #d97706;
+}
+.tj-mapbox .tj-map__state--delivered .tj-map__dot {
+  background: #0f7b4b;
+}
+.tj-mapbox .tj-map__state--stopped .tj-map__dot {
+  background: #c2000a;
+}
+.tj-mapbox .tj-map__percent {
+  font-size: 13px;
+  color: #5b6078;
+}
+.tj-mapbox .tj-map__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: #eeeff3;
+  overflow: hidden;
+}
+.tj-mapbox .tj-map__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #11194e, #fe000b);
+}
+.tj-mapbox .tj-map__facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.tj-mapbox .tj-map__facts div {
+  margin: 0;
+}
+.tj-mapbox .tj-map__facts dt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a8fa6;
+}
+.tj-mapbox .tj-map__facts dd {
+  margin: 2px 0 0;
+  font-weight: 700;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.tj-mapbox .tj-map__note {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: #5b6078;
+}
+@keyframes tj-map-pulse {
+  70% {
+    box-shadow: 0 0 0 8px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+@media (max-width: 520px) {
+  .tj-mapbox .tj-map__facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tj-mapbox .tj-map__state--moving .tj-map__dot {
+    animation: none;
+  }
+}

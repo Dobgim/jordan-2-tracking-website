@@ -1,0 +1,74 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand: #fe000b;
+  --color-brand-dark: #d9000a;
+  --color-navy: #11194e;
+  --color-navy-900: #0d1340;
+  --color-royal: #142487;
+  --color-royal-light: #3544a1;
+  --color-body: #5c677b;
+  --color-line: #e8e8ee;
+  --color-mist: #f1f2f6;
+
+  --font-heading: 'Geologica', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --breakpoint-xs: 30rem;
+
+  --animate-fade-up: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-marquee-x: arrow-x 2.2s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(32px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes arrow-x {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(14px); }
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgb(254 0 11 / 0.55); }
+    100% { box-shadow: 0 0 0 22px rgb(254 0 11 / 0); }
+  }
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-white font-sans text-[16px] leading-[1.7] text-body antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 { @apply font-heading text-navy; }
+  ::selection { @apply bg-brand text-white; }
+}
+
+@layer components {
+  /* the theme's signature button: red, with one clipped corner top-right and bottom-left */
+  .btn-cut {
+    @apply relative inline-flex items-center gap-2.5 bg-brand py-3.5 pr-7 pl-7 font-heading text-[15px] font-semibold whitespace-nowrap text-white transition-colors duration-300 hover:bg-navy;
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    border-radius: 4px;
+  }
+  .btn-cut .btn-dot {
+    @apply grid size-[26px] shrink-0 place-items-center rounded-full bg-royal text-white transition-transform duration-300;
+  }
+  .btn-cut:hover .btn-dot { @apply translate-x-0.5 bg-brand; }
+  .btn-cut--light { @apply bg-mist text-navy hover:bg-navy hover:text-white; }
+  .btn-cut--light .btn-dot { @apply bg-royal; }
+
+  .container-x { @apply mx-auto w-full max-w-[1320px] px-4 sm:px-6; }
+  .container-wide { @apply mx-auto w-full max-w-[1770px] px-4; }
+
+  .reveal { @apply translate-y-8 opacity-0 transition-[opacity,transform] duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)]; }
+  .reveal.is-visible { @apply translate-y-0 opacity-100; }
+
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}

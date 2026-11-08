@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.vercel/
+
+# local overrides - never commit keys other than the public anon key
+.env
+.env.*
+!.env.example
