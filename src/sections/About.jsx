@@ -24,11 +24,11 @@ export default function About() {
           </Reveal>
         </div>
 
-        <div className="container-x pt-14 pb-[90px] lg:pt-[75px] lg:pb-[130px] lg:pl-[420px]">
+        <div className="container-x pt-14 pb-[80px] lg:pt-[75px] lg:pb-[130px] xl:pl-[420px]">
           <Reveal as="h2" className="max-w-[660px] text-[38px] leading-[1.1] font-semibold text-white sm:text-[55px]">
             {about.title}
           </Reveal>
-          <div className="mt-12 grid gap-10 lg:grid-cols-[465px_1fr] lg:gap-[35px]">
+          <div className="mt-10 grid gap-10 md:grid-cols-2 md:gap-8 xl:grid-cols-[465px_1fr] xl:gap-[35px]">
             <Reveal delay={100} className="space-y-6 text-white/85">
               {about.paragraphs.map((p) => (
                 <p key={p.slice(0, 20)}>{p}</p>

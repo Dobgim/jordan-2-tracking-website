@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
 import ShipmentMap from '../components/ShipmentMap.jsx';
 import { Stripes } from '../components/ui.jsx';
 import { company } from '../data/site.jsx';
-import { readTrackCode } from '../lib/navigation.js';
 import { getPublicSettings, trackShipment } from '../lib/publicApi.js';
 
 /*
@@ -164,7 +164,10 @@ const FEATURES = [
 ];
 
 export default function TrackPage() {
-  const [code, setCode] = useState(readTrackCode);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const code = (params.get('code') || params.get('track') || '').trim();
   const [input, setInput] = useState(code);
   const [state, setState] = useState({});
   const [clockOffset, setClockOffset] = useState(0);
@@ -176,21 +179,10 @@ export default function TrackPage() {
     document.title = 'Track Your Shipment – TheJordans Logistics & Freight';
   }, []);
 
-  // back/forward, and tracking boxes elsewhere on the page
+  // back/forward, and tracking boxes elsewhere (header search, widget)
   useEffect(() => {
-    const sync = () => {
-      const next = readTrackCode();
-      searched.current = true;
-      setCode(next);
-      setInput(next);
-    };
-    window.addEventListener('popstate', sync);
-    window.addEventListener('tj:track', sync);
-    return () => {
-      window.removeEventListener('popstate', sync);
-      window.removeEventListener('tj:track', sync);
-    };
-  }, []);
+    setInput(code);
+  }, [code]);
 
   useEffect(() => {
     getPublicSettings()
@@ -236,9 +228,8 @@ export default function TrackPage() {
     const next = input.trim();
     if (!next) return;
     searched.current = true;
-    window.history.pushState(null, '', '/track?code=' + encodeURIComponent(next));
     if (next === code) load(false);
-    else setCode(next);
+    else navigate('/track?code=' + encodeURIComponent(next));
   };
 
   const phone = settings?.companyPhone || company.phone;

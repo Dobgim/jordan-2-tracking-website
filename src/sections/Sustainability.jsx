@@ -3,11 +3,11 @@ import Icon from '../components/Icon.jsx';
 import { CutButton, Reveal, useUI } from '../components/ui.jsx';
 import { freightModes, sustainability as s } from '../data/site.jsx';
 
-function Accordion() {
+export function Accordion({ items = s.faqs }) {
   const [open, setOpen] = useState(0);
   return (
     <ul>
-      {s.faqs.map((f, i) => {
+      {items.map((f, i) => {
         const isOpen = open === i;
         return (
           <li key={f.q + i} className="border-b border-line">
@@ -16,7 +16,7 @@ function Accordion() {
                 type="button"
                 onClick={() => setOpen(isOpen ? -1 : i)}
                 aria-expanded={isOpen}
-                className="flex w-full items-center justify-between gap-6 py-[18px] text-left font-heading text-[20px] font-medium text-navy"
+                className="flex w-full items-center justify-between gap-4 py-[18px] text-left font-heading text-[17px] sm:gap-6 sm:text-[20px] font-medium text-navy"
               >
                 {f.q}
                 <span
@@ -49,30 +49,30 @@ export default function Sustainability() {
       </Reveal>
 
       <div className="mt-10 lg:mt-[70px]">
-        <Reveal className="relative z-10 flex flex-col gap-7 sm:flex-row sm:items-start sm:justify-between lg:h-[124px] lg:pl-[482px]">
+        <Reveal className="relative z-10 flex flex-col gap-7 sm:flex-row sm:items-start sm:justify-between xl:h-[124px] xl:pl-[482px]">
           <p className="max-w-[450px] border-l-2 border-brand pl-[33px]">{s.text}</p>
-          <CutButton href="/#quote" className="self-start">
+          <CutButton href="/contact" className="self-start">
             Explore More
           </CutButton>
         </Reveal>
 
-        <div className="mt-10 grid gap-12 lg:mt-[-124px] lg:grid-cols-[660px_1fr] lg:gap-[89px]">
+        <div className="mt-10 grid gap-12 lg:grid-cols-2 lg:gap-12 xl:mt-[-124px] xl:grid-cols-[660px_1fr] xl:gap-[89px]">
           <Reveal className="relative">
-            <div className="relative h-[340px] overflow-hidden rounded-[13px] bg-black sm:h-[440px] lg:h-[538px]">
-              <img src={s.image} alt="Aerial view of a distribution centre with trucks at the loading bays" loading="lazy" className="size-full object-cover lg:h-[500px]" />
+            <div className="relative h-[280px] overflow-hidden rounded-[13px] bg-black sm:h-[420px] xl:h-[538px]">
+              <img src={s.image} alt="Aerial view of a distribution centre with trucks at the loading bays" loading="lazy" className="size-full object-cover xl:h-[500px]" />
             </div>
             {/* notch the paragraph sits in */}
-            <span className="absolute top-0 right-0 hidden h-[124px] w-[238px] rounded-bl-[13px] bg-white lg:block" aria-hidden="true" />
+            <span className="absolute top-0 right-0 hidden h-[124px] w-[238px] rounded-bl-[13px] bg-white xl:block" aria-hidden="true" />
             <button
               type="button"
               onClick={() => open({ video: s.video })}
               aria-label="Play video"
-              className="absolute right-10 bottom-10 grid size-[88px] animate-pulse-ring place-items-center rounded-full bg-brand text-white transition-transform duration-300 hover:scale-105"
+              className="absolute right-5 bottom-5 grid size-[70px] sm:right-10 sm:bottom-10 sm:size-[88px] animate-pulse-ring place-items-center rounded-full bg-brand text-white transition-transform duration-300 hover:scale-105"
             >
               <Icon name="play" size={26} />
             </button>
           </Reveal>
-          <Reveal delay={150} className="lg:pt-[194px]">
+          <Reveal delay={150} className="xl:pt-[194px]">
             <Accordion />
           </Reveal>
         </div>
@@ -89,7 +89,7 @@ export function FreightModes() {
           <Reveal
             key={m.title}
             delay={i * 120}
-            className={`group md:pr-10 ${i > 0 ? 'md:border-l md:border-line md:pl-[60px]' : ''}`}
+            className={`group md:pr-6 lg:pr-10 ${i > 0 ? 'md:border-l md:border-line md:pl-8 lg:pl-[60px]' : ''}`}
           >
             <span className="grid size-[87px] place-items-center rounded-full bg-royal text-white transition-colors duration-500 group-hover:bg-brand">
               <Icon name={m.icon} size={34} strokeWidth={1.6} />

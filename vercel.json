@@ -5,9 +5,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/track", "destination": "/index.html" },
-    { "source": "/track/", "destination": "/index.html" },
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/admin/:path*", "destination": "/admin.html" }
+    { "source": "/admin/:path*", "destination": "/admin.html" },
+    { "source": "/((?!assets/|images/|admin-icons/|.*\..*).*)", "destination": "/index.html" }
   ]
 }

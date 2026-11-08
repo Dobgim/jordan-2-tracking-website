@@ -61,22 +61,22 @@ export default function Footer() {
               <span className="grid size-[30px] shrink-0 place-items-center rounded-full border border-white/15">
                 <span className="size-[7px] rounded-full bg-brand" />
               </span>
-              <p className="w-[260px] shrink-0 font-heading text-[19px] leading-[1.55] font-medium text-white">{footer.newsletter}</p>
+              <p className="font-heading text-[17px] sm:text-[19px] lg:w-[260px] lg:shrink-0 leading-[1.55] font-medium text-white">{footer.newsletter}</p>
             </div>
             <Newsletter />
           </div>
         </div>
 
-        <div className="grid gap-12 py-14 md:grid-cols-2 lg:grid-cols-[432px_425px_1fr] lg:gap-0 lg:py-0">
-          <div className="lg:border-r lg:border-white/10 lg:py-[60px] lg:pr-10">
-            <h3 className="max-w-[260px] text-[30px] leading-[1.33] font-medium text-white">{footer.cta}</h3>
-            <CutButton href="/#quote" className="mt-9">
+        <div className="grid gap-12 py-14 md:grid-cols-2 xl:grid-cols-[432px_425px_1fr] xl:gap-0 xl:py-0">
+          <div className="xl:border-r xl:border-white/10 xl:py-[60px] xl:pr-10">
+            <h3 className="max-w-[300px] text-[26px] sm:text-[30px] leading-[1.33] font-medium text-white">{footer.cta}</h3>
+            <CutButton href="/contact" className="mt-9">
               Request a quote
             </CutButton>
           </div>
-          <div className="lg:border-r lg:border-white/10 lg:py-[60px] lg:pl-14">
+          <div className="xl:border-r xl:border-white/10 xl:py-[60px] xl:pl-14">
             <h3 className="text-[20px] font-medium text-white">Quick Links</h3>
-            <div className="mt-8 grid max-w-[340px] grid-cols-2 gap-x-10 whitespace-nowrap">
+            <div className="mt-8 grid max-w-[340px] grid-cols-2 gap-x-6 sm:gap-x-10 sm:whitespace-nowrap">
               {footer.links.map((col, i) => (
                 <ul key={i} className="space-y-[7px]">
                   {col.map((l) => (
@@ -90,8 +90,8 @@ export default function Footer() {
               ))}
             </div>
           </div>
-          <div className="lg:py-[60px] lg:pl-10">
-            <ul className="space-y-3.5 font-heading text-[19px] font-medium text-white">
+          <div className="md:col-span-2 xl:col-span-1 xl:py-[60px] xl:pl-10">
+            <ul className="space-y-3.5 font-heading text-[17px] font-medium break-words text-white sm:text-[19px]">
               <li>
                 <a href={company.phoneHref} className="hover:text-brand">
                   {company.phone}

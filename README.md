@@ -3,11 +3,18 @@
 A clean React 18 + Tailwind CSS v4 rebuild of the TheJordans website, with a
 live shipment-tracking page and the admin dashboard. Data lives in Supabase.
 
-| URL | What |
+| URL | Page |
 |---|---|
-| `/` | The website |
-| `/track?code=TJ-240001` | Tracking page: status, live map, progress, history |
+| `/` | Home |
+| `/about` | About Us |
+| `/services` | Services |
+| `/news` and `/news/:slug` | News list and article pages |
+| `/track?code=TJ-240001` | Tracking: status, live map, progress, history |
+| `/contact` | Contact details, quote form, FAQ, office map |
 | `/admin` | Admin dashboard (Supabase Auth login) |
+
+Every page has its own URL (React Router); links switch pages without a reload.
+The layout is responsive from 320px phones up to wide desktops.
 
 ## Run locally
 
@@ -30,6 +37,7 @@ Restrict the key to your domains in Google Cloud → Credentials.
 - `src/data/site.jsx` — all text, links and images (edit content here)
 - `src/sections/` — home page sections
 - `src/components/` — header, footer, overlays, floating widgets, shared UI
+- `src/pages/Pages.jsx` — Home, About, Services, News, Article, Contact, 404
 - `src/pages/TrackPage.jsx` — the tracking page
 - `src/lib/` — Supabase calls, map loader, package-movement maths
 - `src/admin/` — admin dashboard (own entry `admin.html`, own stylesheet)

@@ -7,7 +7,7 @@ export default function Industries() {
   const c = useCarousel({ count: slides.length, perView: { base: 1, sm: 2, lg: 3, xl: 4 }, autoplay: 4500 });
 
   return (
-    <section className="pt-[110px] lg:pt-[150px]">
+    <section className="overflow-x-clip pt-[110px] lg:pt-[150px]">
       <div className="relative">
         <div className="container-x grid items-start gap-6 lg:grid-cols-[530px_340px] lg:gap-[70px] lg:px-[30px]">
           <Reveal as="h2" className="text-[38px] leading-[1.1] font-semibold sm:text-[55px]">
@@ -38,7 +38,7 @@ export default function Industries() {
                     <img src={it.icon} alt="" className="size-9" />
                   </span>
                   <h3 className="mt-14 max-w-[230px] text-[26px] leading-[1.35] font-medium">
-                    <a href="/#services" className="transition-colors hover:text-brand">
+                    <a href="/services" className="transition-colors hover:text-brand">
                       {it.title}
                     </a>
                   </h3>

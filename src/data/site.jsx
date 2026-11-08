@@ -22,11 +22,11 @@ export const company = {
 
 export const nav = [
   { label: 'Home', href: '/' },
-  { label: 'About Us', href: '/#about' },
-  { label: 'Services', href: '/#services' },
-  { label: 'News', href: '/#insights' },
+  { label: 'About Us', href: '/about' },
+  { label: 'Services', href: '/services' },
+  { label: 'News', href: '/news' },
   { label: 'Tracking', href: '/track' },
-  { label: 'Contact Us', href: '/#quote' },
+  { label: 'Contact Us', href: '/contact' },
 ];
 
 export const topbar = {
@@ -39,8 +39,8 @@ export const hero = {
   image: IMG('h4-1.webp'),
   title: 'Smart Logistics Solutions That Move Your Business Forward.',
   text: 'From pickup to delivery, track and manage every shipment in one unified platform, built for speed, clarity, and operational efficiency.',
-  primary: { label: 'Ship immediately', href: '/#quote' },
-  secondary: { label: 'Calculate Fee', href: '/#quote' },
+  primary: { label: 'Ship immediately', href: '/contact' },
+  secondary: { label: 'Calculate Fee', href: '/contact' },
 };
 
 export const heroStats = [
@@ -54,19 +54,19 @@ export const getStarted = [
     icon: 'hand',
     title: 'How to Get Started',
     text: 'Quick guides to help you book, track, and manage shipments with ease.',
-    link: { label: 'Get Started', href: '/#quote' },
+    link: { label: 'Get Started', href: '/contact' },
   },
   {
     icon: 'layout',
     title: 'Book & Manage Shipments',
     text: 'Plan, manage, and pay for your shipments through one simple platform.',
-    link: { label: 'Book Now', href: '/#quote' },
+    link: { label: 'Book Now', href: '/contact' },
   },
   {
     icon: 'edit',
     title: 'Logistics Insights',
     text: 'Articles, guides, and resources to help you optimise your supply chain.',
-    link: { label: 'Explore Resources', href: '/#insights' },
+    link: { label: 'Explore Resources', href: '/news' },
   },
 ];
 
@@ -120,7 +120,7 @@ export const about = {
     'Transparent Tracking & Responsive Support',
     'Designed To Scale With Growing Businesses',
   ],
-  cta: { label: 'More About Us', href: '/#about' },
+  cta: { label: 'More About Us', href: '/about' },
 };
 
 export const capacity = [
@@ -283,11 +283,15 @@ export const posts = [
   { date: '25/02/26', tags: ['Customer Experience'], title: 'The Role of Technology in Optimizing Fulfillment Operations', image: IMG('p4.webp') },
   { date: '25/02/26', tags: ['Sustainability'], title: 'Solving Last-Mile Delivery Challenges', image: IMG('p5.webp') },
   { date: '25/02/26', tags: ['Transports'], title: 'What Customers Expect From Fast Delivery Today', image: IMG('p2.webp') },
-].map((p) => ({ ...p, excerpt }));
+].map((p, i) => ({
+  ...p,
+  excerpt,
+  slug: p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + (i === 4 ? '-2' : ''),
+}));
 
 export const helpLinks = [
-  { label: 'Frequently Asked Questions', href: '/#sustainability' },
-  { label: 'Ask TheJordans Logistic', href: '/#quote' },
+  { label: 'Frequently Asked Questions', href: '/contact#faq' },
+  { label: 'Ask TheJordans Logistic', href: '/contact' },
   { label: 'How Our Delivery Works', href: '/track' },
 ];
 
@@ -296,20 +300,45 @@ export const footer = {
   newsletter: 'News & Insights, Straight To Your Inbox Every Week',
   links: [
     [
-      { label: 'About', href: '/#about' },
-      { label: 'Our Services', href: '/#services' },
-      { label: 'Sustainability', href: '/#sustainability' },
-      { label: 'News & Media', href: '/#insights' },
+      { label: 'About', href: '/about' },
+      { label: 'Our Services', href: '/services' },
+      { label: 'Sustainability', href: '/about#sustainability' },
+      { label: 'News & Media', href: '/news' },
       { label: 'Track a Shipment', href: '/track' },
     ],
     [
-      { label: 'Air Freight', href: '/#services' },
-      { label: 'Sea Freight', href: '/#services' },
-      { label: 'Land Transport', href: '/#services' },
-      { label: 'Groupage', href: '/#services' },
-      { label: 'Consultancy', href: '/#quote' },
+      { label: 'Air Freight', href: '/services' },
+      { label: 'Sea Freight', href: '/services' },
+      { label: 'Land Transport', href: '/services' },
+      { label: 'Groupage', href: '/services' },
+      { label: 'Consultancy', href: '/contact' },
     ],
   ],
   legal: ['Terms & Conditions', 'Site Map', 'Return and Refund Policy'],
   socials: ['facebook', 'twitter', 'telegram', 'pinterest'],
 };
+
+export const articleBody = [
+  'Every delivery starts long before a truck leaves the yard. Route planning, load consolidation and accurate hand-over data decide how quickly — and how reliably — a shipment reaches its destination.',
+  'By combining real-time tracking with structured operational workflows, our teams can spot delays early, re-route around disruption and keep customers informed at every checkpoint. The result is fewer failed deliveries, lower costs per parcel and a better experience for the receiver.',
+  'For growing businesses the key is consistency: the same clear process for every order, whether it is a single parcel or a full truckload. That is the standard we hold ourselves to on every shipment we handle.',
+];
+
+export const contactFaqs = [
+  {
+    q: 'How do I track my shipment?',
+    a: 'Enter the tracking number from your receipt or invoice on the Tracking page — or scan the QR code on your invoice. You will see the live status, the package on the map and the full checkpoint history.',
+  },
+  {
+    q: 'How do I get a quote?',
+    a: 'Fill in the Request A Quote form with your route, dimensions and freight type. Our team replies with a tailored quote, usually within a few hours on working days.',
+  },
+  {
+    q: 'Which freight types do you handle?',
+    a: 'Truck, rail, sea and air freight — from single parcels and e-commerce orders to full containers and dedicated loads.',
+  },
+  {
+    q: 'Can I change the delivery address after shipping?',
+    a: 'Yes. Contact our support team with your tracking number and we will update the delivery preferences while the shipment is in transit, where the route allows it.',
+  },
+];

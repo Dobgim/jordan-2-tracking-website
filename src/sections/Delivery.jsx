@@ -14,7 +14,7 @@ export default function Delivery() {
                 src={c.image}
                 alt=""
                 loading="lazy"
-                className="absolute inset-0 z-10 size-full object-cover transition-[clip-path] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] [clip-path:inset(0_32%_0_0)] group-focus-within:[clip-path:inset(0_100%_0_0)] group-hover:[clip-path:inset(0_100%_0_0)]"
+                className="absolute inset-0 z-10 size-full object-cover transition-[clip-path] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] [clip-path:inset(0_32%_0_0)] group-focus-within:[clip-path:inset(0_100%_0_0)] group-hover:[clip-path:inset(0_100%_0_0)] [@media(hover:none)]:[clip-path:inset(0_100%_0_0)]"
               />
               <Stripes className="pointer-events-none absolute bottom-0 left-0 -z-10 h-[115px] w-auto text-white/10" />
 
@@ -24,10 +24,10 @@ export default function Delivery() {
                 </span>
                 <span className="font-heading text-[16px] text-white">{c.tag}</span>
               </div>
-              <h3 className="relative mt-7 text-[25px] font-semibold text-white">{c.title}</h3>
+              <h3 className="relative mt-7 text-[22px] font-semibold text-white sm:text-[25px]">{c.title}</h3>
               <p className="relative mt-3 text-[16px] leading-[1.65] text-white/85">{c.text}</p>
               <div className="relative mt-auto flex justify-end pt-8">
-                <CutButton href="/#quote" className="!py-3.5 !pr-7">
+                <CutButton href="/contact" className="!py-3.5 !pr-7">
                   Read More
                 </CutButton>
               </div>

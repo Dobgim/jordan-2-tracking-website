@@ -55,7 +55,7 @@ function SidePanel() {
           ))}
         </ul>
         <Socials className="mt-9" tone="light" />
-        <CutButton href="/#quote" className="mt-auto self-start" onClick={close}>
+        <CutButton href="/contact" className="mt-auto self-start" onClick={close}>
           Request a quote
         </CutButton>
       </aside>
@@ -204,7 +204,7 @@ function CartDrawer() {
           <div>
             <img src={IMG('cart2.png')} alt="" className="mx-auto w-28" />
             <p className="mt-4 font-heading text-lg text-navy">Your cart is currently empty.</p>
-            <CutButton href="/#services" className="mt-6" onClick={close}>
+            <CutButton href="/services" className="mt-6" onClick={close}>
               Explore Services
             </CutButton>
           </div>

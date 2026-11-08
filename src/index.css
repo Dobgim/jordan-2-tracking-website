@@ -46,7 +46,7 @@
 @layer components {
   /* the theme's signature button: red, with one clipped corner top-right and bottom-left */
   .btn-cut {
-    @apply relative inline-flex items-center gap-2.5 bg-brand py-3.5 pr-7 pl-7 font-heading text-[15px] font-semibold whitespace-nowrap text-white transition-colors duration-300 hover:bg-navy;
+    @apply relative inline-flex items-center gap-2.5 bg-brand py-3.5 pr-7 pl-7 max-w-full font-heading text-[15px] font-semibold text-white transition-colors xs:whitespace-nowrap duration-300 hover:bg-navy;
     clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
     border-radius: 4px;
   }

@@ -22,7 +22,7 @@ export function ScrollTop() {
       type="button"
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       aria-label="Back to top"
-      className={`fixed bottom-6 left-6 z-40 grid size-[46px] place-items-center rounded-full bg-[#141821] text-white shadow-lg transition-all duration-500 ${
+      className={`fixed bottom-6 left-4 z-40 grid size-[46px] sm:left-6 place-items-center rounded-full bg-[#141821] text-white shadow-lg transition-all duration-500 ${
         visible ? 'visible translate-y-0 opacity-100' : 'invisible translate-y-4 opacity-0'
       }`}
     >
@@ -119,10 +119,11 @@ export function HelpWidget() {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-haspopup="dialog"
-          className="relative flex h-[50px] items-center gap-3 bg-navy pr-7 pl-7 text-white shadow-[0_10px_30px_rgb(17_25_78/0.35)] transition-colors hover:bg-royal [clip-path:polygon(8%_0,100%_0,94%_100%,0_100%)]"
+          aria-label="Track and help"
+          className="relative flex h-[50px] items-center gap-3 bg-navy pr-5 pl-6 text-white sm:pr-7 sm:pl-7 shadow-[0_10px_30px_rgb(17_25_78/0.35)] transition-colors hover:bg-royal [clip-path:polygon(8%_0,100%_0,94%_100%,0_100%)]"
         >
           <Icon name="truck" size={20} />
-          <span className="text-left leading-none">
+          <span className="hidden text-left leading-none xs:block">
             <span className="block text-[14px] font-bold tracking-wide">TRACK &amp; HELP</span>
             <span className="mt-1 flex items-center gap-1.5 text-[10px] text-white/75">
               <span className="size-1.5 rounded-full bg-emerald-400" />

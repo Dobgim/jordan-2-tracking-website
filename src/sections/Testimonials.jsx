@@ -41,8 +41,8 @@ function TestimonialSlider() {
         {slides.map((s, idx) => (
           <li key={idx} className="flex w-[min(673px,calc(100vw-32px))] shrink-0 flex-col gap-2.5 sm:flex-row" aria-hidden={idx % t.items.length !== i}>
             <img src={s.image} alt={s.name} loading="lazy" className="h-[260px] w-full rounded-lg object-cover object-top sm:h-auto sm:w-[250px]" />
-            <figure className="flex flex-1 flex-col rounded-xl bg-white p-9">
-              <blockquote className="font-heading text-[19px] leading-[1.55] text-navy">{s.quote}</blockquote>
+            <figure className="flex flex-1 flex-col rounded-xl bg-white p-6 sm:p-9">
+              <blockquote className="font-heading text-[17px] leading-[1.55] text-navy sm:text-[19px]">{s.quote}</blockquote>
               <figcaption className="mt-auto flex items-center gap-4 pt-10">
                 <QuoteMark className="h-[19px] w-[23px]" />
                 <span>
@@ -74,14 +74,14 @@ export default function Testimonials() {
     <section className="pt-[100px] lg:pt-[140px]">
       <div className="relative lg:ml-[max(16px,calc((100vw-1320px)/2+24px))]">
         {/* white notch with the satisfaction figure */}
-        <div className="relative z-10 flex items-center gap-5 bg-white px-4 py-6 sm:px-0 lg:absolute lg:top-0 lg:left-0 lg:h-[117px] lg:w-[410px] lg:rounded-br-[13px] lg:py-0">
-          <Icon name="arrowRight" size={30} strokeWidth={1.8} className="hidden -translate-x-full text-brand lg:block lg:absolute lg:-left-12" />
-          <p className="flex items-start font-heading text-[80px] leading-none font-medium tracking-tight text-navy lg:pl-4">
+        <div className="relative z-10 flex items-center gap-3 bg-white px-4 py-6 xs:gap-5 sm:px-6 lg:absolute lg:top-0 lg:left-0 lg:h-[117px] lg:w-[410px] lg:rounded-br-[13px] lg:py-0">
+          <Icon name="arrowRight" size={30} strokeWidth={1.8} className="absolute -left-12 hidden -translate-x-full text-brand min-[1440px]:block" />
+          <p className="flex shrink-0 items-start font-heading text-[56px] leading-none xs:text-[80px] font-medium tracking-tight text-navy lg:pl-4">
             <CountUp to={t.satisfaction} duration={1800} />
-            <span className="mt-1 text-[32px] text-brand">%</span>
+            <span className="mt-1 text-[24px] text-brand xs:text-[32px]">%</span>
           </p>
-          <span className="h-[72px] w-px bg-line" />
-          <p className="font-heading text-[19px] leading-[1.45] font-medium text-navy">
+          <span className="h-[72px] w-px shrink-0 bg-line" />
+          <p className="font-heading text-[15px] leading-[1.45] font-medium text-navy xs:text-[19px]">
             Client Satisfaction
             <br />
             Across Logistics
@@ -96,7 +96,7 @@ export default function Testimonials() {
             <Reveal>
               <h2 className="text-[38px] leading-[1.12] font-bold text-white sm:text-[54px]">{t.title}</h2>
               <p className="mt-7 max-w-[420px] font-heading text-[17px] text-white/90">{t.text}</p>
-              <CutButton href="/#quote" className="mt-10">
+              <CutButton href="/contact" className="mt-10">
                 View All Reviews
               </CutButton>
             </Reveal>
@@ -131,8 +131,8 @@ export function Partners() {
           </div>
         ))}
         <a
-          href="/#quote"
-          className="group col-span-2 flex min-h-[200px] flex-col justify-between rounded-tr-[30px] bg-royal p-10 transition-colors duration-500 hover:bg-navy sm:col-span-4 lg:col-span-2"
+          href="/contact"
+          className="group col-span-2 flex min-h-[180px] flex-col justify-between rounded-tr-[30px] bg-royal p-7 sm:p-10 transition-colors duration-500 hover:bg-navy sm:col-span-4 lg:col-span-2"
         >
           <h3 className="text-[22px] font-medium text-white">Become A Partner</h3>
           <Icon name="arrowRight" size={30} strokeWidth={1.8} className="self-end text-brand transition-transform duration-300 group-hover:translate-x-2" />

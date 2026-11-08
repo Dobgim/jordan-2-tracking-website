@@ -2,12 +2,12 @@ import Icon from '../components/Icon.jsx';
 import { Reveal, useCarousel } from '../components/ui.jsx';
 import { helpLinks, posts } from '../data/site.jsx';
 
-function PostCard({ post }) {
+export function PostCard({ post }) {
   return (
     <article className="group">
-      <div className="flex items-center justify-between gap-3 border-b border-line pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <span className="rounded-[4px] bg-brand px-3.5 py-[3px] font-heading text-[15px] font-medium text-white">{post.date}</span>
-        <span className="flex items-center gap-2 truncate rounded-[4px] bg-mist px-3.5 py-[3px] text-[14px] text-navy">
+        <span className="flex min-w-0 flex-wrap items-center gap-2 rounded-[4px] bg-mist px-3.5 py-[3px] text-[14px] text-navy">
           {post.tags.map((tag, i) => (
             <span key={tag} className="flex items-center gap-2">
               {i > 0 && <span className="size-1 rounded-full bg-brand" />}
@@ -17,12 +17,12 @@ function PostCard({ post }) {
         </span>
       </div>
       <h3 className="mt-5 text-[22px] leading-[1.36] font-medium">
-        <a href="/#insights" className="transition-colors hover:text-brand">
+        <a href={`/news/${post.slug}`} className="transition-colors hover:text-brand">
           {post.title}
         </a>
       </h3>
       <p className="mt-4">{post.excerpt}</p>
-      <a href="/#insights" className="relative mt-7 block h-[325px] overflow-hidden rounded-[13px]">
+      <a href={`/news/${post.slug}`} className="relative mt-7 block h-[325px] overflow-hidden rounded-[13px]">
         <img src={post.image} alt="" loading="lazy" className="size-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105" />
         <span className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-navy-900/95" aria-hidden="true" />
         <span className="absolute right-6 bottom-6 flex items-center gap-2.5 font-heading text-[16px] font-semibold text-white">
@@ -75,7 +75,7 @@ export default function Insights() {
 export function HelpLinks() {
   return (
     <section className="container-x pt-[110px] pb-[80px]">
-      <div className="grid gap-[30px] md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-[30px]">
         {helpLinks.map((l, i) => (
           <Reveal key={l.label} delay={i * 100}>
             <a href={l.href} className="group flex items-center justify-between rounded-md border border-line bg-mist p-2 pl-[25px] transition-colors duration-300 hover:border-navy hover:bg-navy">

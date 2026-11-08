@@ -81,7 +81,7 @@ function QuoteForm() {
   return (
     <form onSubmit={submit} noValidate className="relative rounded-[13px] bg-white p-6 sm:p-[35px] sm:pt-[42px]">
       <div className="flex items-end justify-between">
-        <h2 className="text-[32px] font-semibold">Request A Quote</h2>
+        <h2 className="text-[26px] font-semibold sm:text-[32px]">Request A Quote</h2>
         <svg viewBox="0 0 33 80" className="mr-[30%] hidden h-[82px] w-8 sm:block" aria-hidden="true">
           <path d="M16.5 0v78M2 63l14.5 15L31 63" stroke="#FE000B" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -138,29 +138,29 @@ export default function Quote() {
     <section id="quote" className="container-wide scroll-mt-24 pt-[110px] lg:pt-[150px]">
       <div className="relative overflow-hidden rounded-[13px] bg-navy bg-cover bg-center p-4 sm:p-[35px]" style={{ backgroundImage: `url(${q.image})` }}>
         <div className="absolute inset-0 bg-gradient-to-r from-navy-900/40 via-navy-900/50 to-navy-900/30" aria-hidden="true" />
-        <div className="relative grid items-center gap-10 lg:grid-cols-[670px_1fr] lg:gap-5">
+        <div className="relative grid items-center gap-10 xl:grid-cols-[670px_1fr] xl:gap-5">
           <Reveal>
             <QuoteForm />
           </Reveal>
-          <Reveal delay={150} className="px-2 pb-6 text-white sm:px-0 lg:pt-[150px] lg:pb-0">
+          <Reveal delay={150} className="px-2 pb-6 text-white sm:px-0 xl:pt-[150px] xl:pb-0">
             <h2 className="max-w-[480px] text-[38px] leading-[1.12] font-bold text-white sm:text-[56px]">{q.title}</h2>
             <p className="mt-5 max-w-[470px] font-heading text-[17px] text-white/90">{q.text}</p>
             <ul className="mt-9 space-y-7">
-              <li className="flex items-center gap-6">
+              <li className="flex items-center gap-4 sm:gap-6">
                 <span className="grid size-[63px] shrink-0 place-items-center rounded-full bg-brand">
                   <Icon name="pinFlag" size={24} />
                 </span>
-                <p className="font-heading text-[17px] leading-[1.6] font-medium">
+                <p className="min-w-0 font-heading text-[16px] leading-[1.6] font-medium break-words sm:text-[17px]">
                   {company.address}
                   <br />
                   {company.city}
                 </p>
               </li>
-              <li className="flex items-center gap-6">
+              <li className="flex items-center gap-4 sm:gap-6">
                 <span className="grid size-[63px] shrink-0 place-items-center rounded-full bg-brand">
                   <Icon name="send" size={22} />
                 </span>
-                <p className="font-heading text-[17px] leading-[1.6] font-medium">
+                <p className="min-w-0 font-heading text-[16px] leading-[1.6] font-medium break-words sm:text-[17px]">
                   <a href={company.phoneHref} className="hover:underline">
                     {company.phone.replace('–', '-')}
                   </a>

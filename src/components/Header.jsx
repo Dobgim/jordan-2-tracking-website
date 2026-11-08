@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Icon from './Icon.jsx';
 import { useUI } from './ui.jsx';
 import { IMG, nav, topbar } from '../data/site.jsx';
@@ -34,7 +35,7 @@ function TopBar() {
           <strong className="font-semibold text-navy">{topbar.update.label}</strong> {topbar.update.text}
         </p>
         <div className="flex items-center gap-6">
-          <a href="/#quote" className="flex items-center gap-2.5 text-[14px] text-body transition-colors hover:text-brand">
+          <a href="/contact" className="flex items-center gap-2.5 text-[14px] text-body transition-colors hover:text-brand">
             <span className="grid size-8 place-items-center rounded-full border border-line text-navy">
               <Icon name="returnArrow" size={15} />
             </span>
@@ -42,7 +43,7 @@ function TopBar() {
           </a>
           <Dropdown icon="globe" label="En" items={topbar.languages.slice(1)} />
           <Dropdown icon="pin" label="Find Closest Location" items={topbar.locations} />
-          <a href="/#quote" className="flex items-center gap-2.5 text-[14px] text-body transition-colors hover:text-brand">
+          <a href="/contact" className="flex items-center gap-2.5 text-[14px] text-body transition-colors hover:text-brand">
             <span className="grid size-8 place-items-center rounded-full border border-line text-navy">
               <Icon name="headset" size={15} />
             </span>
@@ -54,14 +55,11 @@ function TopBar() {
   );
 }
 
-const isActive = (href) => {
-  if (typeof window === 'undefined') return false;
-  const path = window.location.pathname;
-  return href === '/track' ? path.startsWith('/track') : href === '/' && path === '/';
-};
+const isActive = (href, path) => (href === '/' ? path === '/' : path === href || path.startsWith(href + '/'));
 
 function MainBar({ sticky = false }) {
   const { open } = useUI();
+  const { pathname } = useLocation();
   return (
     <div className="container-wide">
       <div className={`flex items-center justify-between gap-6 ${sticky ? 'h-[95px]' : 'h-[80px] xl:h-[106px]'}`}>
@@ -76,7 +74,7 @@ function MainBar({ sticky = false }) {
                 <a
                   href={item.href}
                   className={`relative block px-[13px] py-2 font-heading text-[15px] transition-colors hover:text-brand ${
-                    isActive(item.href) ? 'text-brand' : 'text-navy'
+                    isActive(item.href, pathname) ? 'text-brand' : 'text-navy'
                   }`}
                 >
                   {item.label}
@@ -96,7 +94,7 @@ function MainBar({ sticky = false }) {
           <button type="button" onClick={() => open('cart')} aria-label="Cart" className="relative hidden size-10 place-items-center text-navy transition-colors hover:text-brand sm:grid">
             <Icon name="cart" size={24} strokeWidth={2} />
           </button>
-          <a href="/track" className="btn-cut ml-3 hidden !py-4 md:inline-flex">
+          <a href="/track" className="btn-cut ml-3 hidden !py-4 md:inline-flex lg:hidden xl:inline-flex">
             <span className="btn-dot">
               <Icon name="arrowRight" size={13} strokeWidth={2.2} />
             </span>

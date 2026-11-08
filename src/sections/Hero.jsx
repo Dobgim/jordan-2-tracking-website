@@ -70,13 +70,13 @@ export default function Hero() {
       <div className="relative flex flex-col">
         {/* image */}
         <div
-          className="relative overflow-hidden rounded-[13px] bg-navy bg-cover bg-left lg:rounded-br-none"
+          className="relative overflow-hidden rounded-[13px] bg-navy bg-cover bg-[30%_center] xl:rounded-br-none"
           style={{ backgroundImage: `url(${hero.image})` }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-navy-900/70 via-navy-900/25 to-transparent" aria-hidden="true" />
-          <div className="relative flex min-h-[560px] flex-col px-5 pt-5 pb-16 sm:px-8 lg:min-h-[619px] lg:pt-[31px] lg:pr-[30px] lg:pb-[130px] lg:pl-[75px]">
+          <div className="relative flex min-h-[500px] flex-col px-5 pt-5 pb-14 sm:min-h-[560px] sm:px-8 lg:px-12 xl:min-h-[619px] xl:pt-[31px] xl:pr-[30px] xl:pb-[130px] xl:pl-[75px]">
             <div className="flex items-center justify-end gap-5 text-white">
-              <p className="font-heading text-[18px] opacity-90">
+              <p className="font-heading text-[15px] opacity-90 sm:text-[18px]">
                 Support: <a href={company.phoneHref}>{company.phone}</a>
               </p>
               <span className="hidden h-6 w-px bg-white/30 xl:block" />
@@ -95,11 +95,11 @@ export default function Hero() {
               </button>
             </div>
 
-            <div className="mt-14 max-w-[640px] lg:mt-[64px]">
-              <Reveal as="h1" delay={150} className="max-w-[560px] text-[38px] leading-[1.18] font-semibold text-white sm:text-[48px] xl:text-[55px] xl:leading-[65px]">
+            <div className="mt-10 max-w-[640px] sm:mt-14 xl:mt-[64px]">
+              <Reveal as="h1" delay={150} className="max-w-[560px] text-[32px] leading-[1.18] break-words xs:text-[38px] font-semibold text-white sm:text-[48px] xl:text-[55px] xl:leading-[65px]">
                 {hero.title}
               </Reveal>
-              <Reveal as="p" delay={300} className="mt-6 max-w-[540px] text-[17px] text-white/85">
+              <Reveal as="p" delay={300} className="mt-6 max-w-[540px] text-[16px] text-white/85 sm:text-[17px]">
                 {hero.text}
               </Reveal>
               <Reveal delay={450} className="mt-9 flex flex-wrap gap-4">
@@ -113,19 +113,19 @@ export default function Hero() {
         </div>
 
         {/* tracking card: sits over the image on desktop */}
-        <div className="order-3 -mt-6 overflow-hidden rounded-b-[13px] lg:absolute lg:right-5 lg:bottom-0 lg:order-none lg:mt-0 lg:w-[548px] lg:rounded-none">
+        <div className="mt-4 overflow-hidden rounded-[13px] border border-line xl:absolute xl:right-5 xl:bottom-0 xl:mt-0 xl:w-[548px] xl:rounded-none xl:rounded-t-[13px] xl:border-0">
           <TrackCard />
         </div>
 
         {/* stats bar */}
-        <div className="relative z-0 -mt-3 rounded-b-[13px] bg-gradient-to-r from-royal to-navy pt-3 lg:mt-0 lg:pt-0 lg:pr-[588px]">
-          <ul className="grid gap-5 px-5 py-7 sm:grid-cols-3 sm:px-5 lg:flex lg:h-[150px] lg:items-center lg:gap-10 lg:py-0">
+        <div className="relative z-0 mt-4 rounded-[13px] bg-gradient-to-r from-royal to-navy xl:mt-0 xl:rounded-t-none xl:pr-[588px]">
+          <ul className="grid gap-5 px-5 py-7 sm:grid-cols-2 md:grid-cols-3 xl:flex xl:h-[150px] xl:items-center xl:gap-10 xl:py-0">
             {heroStats.map((s) => (
               <li key={s.label} className="flex items-center gap-4">
-                <span className="grid size-[64px] shrink-0 place-items-center rounded-full border border-white/25 text-white">
+                <span className="grid size-[54px] shrink-0 place-items-center rounded-full border border-white/25 text-white xl:size-[64px]">
                   <Icon name={s.icon} size={26} strokeWidth={1.5} />
                 </span>
-                <span className="font-heading text-[19px] font-medium whitespace-nowrap text-white">{s.label}</span>
+                <span className="font-heading text-[17px] font-medium text-white xl:text-[19px] xl:whitespace-nowrap">{s.label}</span>
               </li>
             ))}
           </ul>
@@ -137,10 +137,10 @@ export default function Hero() {
 
 export function GetStarted() {
   return (
-    <section className="container-x mt-[50px]">
+    <section className="container-x mt-[40px] lg:mt-[50px]">
       <div className="grid gap-[30px] md:grid-cols-2 lg:grid-cols-3">
         {getStarted.map((c, i) => (
-          <Reveal key={c.title} delay={i * 120} className="group relative rounded-xl border border-line bg-white p-[35px] pt-[44px] transition-shadow duration-500 hover:shadow-[0_20px_50px_rgb(17_25_78/0.08)]">
+          <Reveal key={c.title} delay={i * 120} className="group relative rounded-xl border border-line bg-white p-6 pt-[44px] sm:p-[35px] sm:pt-[44px] transition-shadow duration-500 hover:shadow-[0_20px_50px_rgb(17_25_78/0.08)]">
             <span className="absolute top-0 left-10 h-[48px] w-1 rounded-b bg-line transition-colors duration-500 group-hover:bg-brand" aria-hidden="true" />
             <span className="absolute top-[18px] right-5 grid size-[60px] place-items-center rounded-lg border border-line text-royal transition-colors duration-500 group-hover:bg-royal group-hover:text-white">
               <Icon name={c.icon} size={28} strokeWidth={1.6} />
