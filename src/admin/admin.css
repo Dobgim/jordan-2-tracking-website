@@ -1501,3 +1501,10 @@ tr.is-clickable:hover td {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* invoice page (the invoice itself is components/ShipmentInvoice) */
+.invoice-admin {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+}

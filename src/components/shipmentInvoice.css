@@ -1,0 +1,349 @@
+/* Shipment invoice - self-contained (prefixed sinv-) so it renders the same
+   on the Tailwind website, in the admin and inside the PDF. */
+.sinv-wrap {
+  font-family: 'Public Sans', system-ui, sans-serif;
+  color: #11194e;
+}
+.sinv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sinv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1px solid #e3e4ea;
+  background: #fff;
+  color: #11194e;
+  font: 600 14.5px 'Public Sans', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.sinv-btn:hover {
+  border-color: #c9cbd6;
+}
+.sinv-btn--primary {
+  background: #fe000b;
+  border-color: #fe000b;
+  color: #fff;
+}
+.sinv-btn--primary:hover:not(:disabled) {
+  background: #11194e;
+  border-color: #11194e;
+}
+.sinv-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.sinv-error {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #c2000a;
+}
+
+.sinv {
+  background: #fff;
+  border: 1px solid #e3e4ea;
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.sinv * {
+  box-sizing: border-box;
+}
+.sinv p,
+.sinv h2,
+.sinv dl,
+.sinv dd {
+  margin: 0;
+}
+.sinv-top {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 32px;
+  background: #11194e;
+  color: #fff;
+  overflow: hidden;
+}
+.sinv-top::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 40%;
+  width: 8px;
+  height: 100%;
+  background: #fe000b;
+  transform: skew(-12deg);
+  opacity: 0.9;
+}
+.sinv-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+.sinv-brand img {
+  height: 38px;
+  width: auto;
+  align-self: flex-start;
+  margin-bottom: 10px;
+}
+.sinv-brand strong {
+  color: #fff;
+  font-size: 15px;
+}
+.sinv-title {
+  position: relative;
+  z-index: 1;
+  text-align: right;
+}
+.sinv-title h2 {
+  font-family: 'Geologica', 'Public Sans', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+.sinv-title dl {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: end;
+  gap: 2px 14px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+.sinv-title dt {
+  color: rgba(255, 255, 255, 0.65);
+}
+.sinv-title dd {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.sinv-status {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.sinv-status--delivered {
+  background: #0f7b4b;
+}
+.sinv-status--in-transit,
+.sinv-status--out-for-delivery {
+  background: #1f46c7;
+}
+.sinv-status--on-hold {
+  background: #b45309;
+}
+.sinv-status--cancelled {
+  background: #c2000a;
+}
+
+.sinv-body {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.sinv-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8a8fa6;
+  margin-bottom: 4px !important;
+}
+.sinv-parties {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.sinv-parties > div {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: #f5f6fa;
+}
+.sinv-parties strong {
+  font-size: 16px;
+}
+.sinv-parties span {
+  color: #5b6078;
+  overflow-wrap: anywhere;
+}
+.sinv-route {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.sinv-route strong {
+  font-size: 15px;
+}
+.sinv-route__line {
+  flex: 1;
+  min-width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 10px;
+  background: linear-gradient(90deg, #c9cbd6 50%, transparent 50%) left center / 10px 2px repeat-x;
+}
+.sinv-route__line i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fe000b;
+}
+.sinv-route__end {
+  text-align: right;
+}
+.sinv-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sinv-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #11194e;
+}
+.sinv-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #eeeff3;
+  vertical-align: top;
+}
+.sinv-table td:first-child {
+  width: 38%;
+  color: #5b6078;
+}
+.sinv-table td:last-child {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sinv-qr {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  border: 1px dashed #c9cbd6;
+  border-radius: 12px;
+}
+.sinv-qr img,
+.sinv-qr__ph {
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+.sinv-qr__ph {
+  background: #f5f6fa;
+  border-radius: 8px;
+}
+.sinv-qr strong {
+  font-size: 16px;
+}
+.sinv-qr p {
+  color: #5b6078;
+  margin: 4px 0 6px;
+}
+.sinv-qr code {
+  font-size: 12px;
+  color: #142487;
+  word-break: break-all;
+}
+.sinv-terms p:last-child {
+  white-space: pre-line;
+  color: #5b6078;
+}
+.sinv-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 32px;
+  border-top: 1px solid #eeeff3;
+  background: #f5f6fa;
+  font-size: 13px;
+  color: #5b6078;
+}
+
+/* phones */
+@media (max-width: 640px) {
+  .sinv-top {
+    flex-direction: column;
+    padding: 22px 20px;
+  }
+  .sinv-top::after {
+    display: none;
+  }
+  .sinv-title {
+    text-align: left;
+  }
+  .sinv-title dl {
+    justify-content: start;
+  }
+  .sinv-body {
+    padding: 20px;
+  }
+  .sinv-parties {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sinv-qr {
+    flex-direction: column;
+    text-align: center;
+  }
+  .sinv-foot {
+    padding: 14px 20px;
+  }
+  .sinv-actions .sinv-btn {
+    flex: 1;
+  }
+}
+
+/* the PDF copy is always laid out as a desktop A4 page */
+.sinv.sinv--pdf {
+  width: 794px;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Print: only the invoice */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .sinv,
+  .sinv * {
+    visibility: visible;
+  }
+  .sinv {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: 0;
+  }
+}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
 import ShipmentMap from '../components/ShipmentMap.jsx';
+import ShipmentInvoice from '../components/ShipmentInvoice.jsx';
 import { Stripes } from '../components/ui.jsx';
 import { company } from '../data/site.jsx';
 import { getPublicSettings, trackShipment } from '../lib/publicApi.js';
@@ -47,7 +48,7 @@ function Spinner() {
   return <span className="inline-block size-5 animate-spin rounded-full border-2 border-line border-t-brand" aria-hidden="true" />;
 }
 
-function ShipmentResult({ shipment, mapsKey, clockOffset }) {
+function ShipmentResult({ shipment, mapsKey, clockOffset, settings }) {
   const lastRegular = shipment.events.find((e) => STEPS.includes(e.status))?.status;
   const currentStep = STEPS.indexOf(STEPS.includes(shipment.status) ? shipment.status : lastRegular || 'Pending');
   const exception = !STEPS.includes(shipment.status);
@@ -156,6 +157,20 @@ function ShipmentResult({ shipment, mapsKey, clockOffset }) {
           </li>
         ))}
       </ol>
+
+      <h3 id="invoice" className="mt-12 text-[20px] font-semibold">Invoice</h3>
+      <p className="mt-1 mb-5 text-[15px]">Your shipment invoice, with a QR code that opens this tracking page. Download it as a PDF to keep or share.</p>
+      <ShipmentInvoice
+        shipment={shipment}
+        company={{
+          name: settings?.companyName,
+          address: settings?.companyAddress,
+          phone: settings?.companyPhone,
+          email: settings?.companyEmail,
+          website: settings?.companyWebsite,
+          terms: settings?.invoiceTerms,
+        }}
+      />
     </>
   );
 }
@@ -327,7 +342,7 @@ export default function TrackPage() {
               </div>
               <span className="text-[13px]">Updated {formatDate(state.shipment.updatedAt, true)} · refreshes automatically</span>
             </header>
-            <ShipmentResult shipment={state.shipment} mapsKey={settings ? settings.googleMapsApiKey || '' : null} clockOffset={clockOffset} />
+            <ShipmentResult shipment={state.shipment} mapsKey={settings ? settings.googleMapsApiKey || '' : null} clockOffset={clockOffset} settings={settings} />
           </Card>
         )}
       </section>

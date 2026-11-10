@@ -4,14 +4,13 @@ import ShipmentMap from '../../components/ShipmentMap.jsx';
 import { DEFAULT_SPEEDS, formatKm } from '../../lib/tracking.js';
 import { useResource } from '../api.js';
 import { addEvent, createShipment, deleteEvent, deleteShipment, getSettings, getShipment, updateShipment } from '../data.js';
-import { computeInvoice, formatMoney, normaliseInvoice } from '../invoice.js';
+import { normaliseInvoice } from '../invoice.js';
 import { locateRoute } from '../route.js';
 import { generateTrackingId } from '../../lib/trackingId.js';
 import { ErrorBox, FREIGHT_TYPES, Icon, Loading, PageHeader, SERVICES, STATUSES, StatusBadge, formatDate } from '../ui.jsx';
 
 const PIECE_TYPES = ['Box', 'Envelope', 'Pallet', 'Crate', 'Carton', 'Container', 'Vehicle', 'Other'];
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'XAF', 'NGN', 'GHS', 'ZAR', 'AED'];
 
 const toLocalInput = (iso) => {
   if (!iso) return '';
@@ -271,9 +270,6 @@ export default function ShipmentForm() {
     );
   }
 
-  const invoice = invoiceOf(form);
-  const totals = computeInvoice(invoice);
-  const money = (v) => formatMoney(v, invoice.currency);
 
   return (
     <>
@@ -450,7 +446,7 @@ export default function ShipmentForm() {
             <section className="card">
               <div className="card__head">
                 <h2>Sender</h2>
-                <span className="muted small">Billed on the invoice</span>
+                <span className="muted small">Shown on the invoice</span>
               </div>
               <div className="card__body stack stack--tight">
                 <label className="field">
@@ -543,125 +539,6 @@ export default function ShipmentForm() {
               </div>
             </section>
           )}
-
-          <section className="card">
-            <div className="card__head">
-              <h2>Billing &amp; invoice</h2>
-              <span className={`badge badge--${totals.status === 'Paid' ? 'ok' : totals.status === 'Unpaid' ? 'bad' : 'warn'}`}>
-                {totals.status}
-              </span>
-            </div>
-            <div className="card__body stack stack--tight">
-              <div className="form-grid form-grid--3">
-                <label className="field">
-                  <span>Currency</span>
-                  <select value={invoice.currency} onChange={setInvoice('currency')}>
-                    {[...new Set([invoice.currency, ...CURRENCIES])].map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>Due date</span>
-                  <input type="date" value={invoice.dueDate || ''} onChange={setInvoice('dueDate')} />
-                </label>
-                <label className="field">
-                  <span>Payment method</span>
-                  <input value={invoice.paymentMethod} onChange={setInvoice('paymentMethod')} placeholder="e.g. Bank transfer" />
-                </label>
-              </div>
-
-              <div className="table-wrap">
-                <table className="items">
-                  <thead>
-                    <tr>
-                      <th>Description</th>
-                      <th className="col-qty">Qty</th>
-                      <th className="col-price">Unit price</th>
-                      <th className="col-amount">Amount</th>
-                      <th className="col-x" aria-label="Remove" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoice.items.map((it, i) => (
-                      <tr key={i}>
-                        <td>
-                          <input value={it.description} onChange={setItem(i, 'description')} placeholder="e.g. Road freight" aria-label="Description" />
-                        </td>
-                        <td className="col-qty">
-                          <input type="number" min="0" step="any" inputMode="decimal" value={it.quantity} onChange={setItem(i, 'quantity')} placeholder="Qty" aria-label="Quantity" />
-                        </td>
-                        <td className="col-price">
-                          <input type="number" min="0" step="0.01" inputMode="decimal" value={it.unitPrice} onChange={setItem(i, 'unitPrice')} placeholder="Unit price" aria-label="Unit price" />
-                        </td>
-                        <td className="col-amount">{money((parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0))}</td>
-                        <td className="col-x">
-                          <button type="button" className="icon-btn icon-btn--danger icon-btn--sm" onClick={() => removeItem(i)} aria-label="Remove line">
-                            <Icon name="trash" size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div>
-                <button type="button" className="btn btn--ghost btn--sm" onClick={addItem}>
-                  <Icon name="plus" size={14} />
-                  Add line
-                </button>
-              </div>
-
-              <div className="billing-foot">
-                <div className="stack stack--tight">
-                  <div className="form-grid form-grid--3">
-                    <label className="field">
-                      <span>Discount</span>
-                      <input type="number" min="0" step="0.01" value={invoice.discount} onChange={setInvoice('discount')} />
-                    </label>
-                    <label className="field">
-                      <span>Tax rate %</span>
-                      <input type="number" min="0" max="100" step="0.01" value={invoice.taxRate} onChange={setInvoice('taxRate')} />
-                    </label>
-                    <label className="field">
-                      <span>Amount paid</span>
-                      <input type="number" min="0" step="0.01" value={invoice.amountPaid} onChange={setInvoice('amountPaid')} />
-                    </label>
-                  </div>
-                  <label className="field">
-                    <span>
-                      Note on the invoice <em className="hint">optional</em>
-                    </span>
-                    <textarea rows={2} value={invoice.notes} onChange={setInvoice('notes')} />
-                  </label>
-                </div>
-                <dl className="totals">
-                  <div>
-                    <dt>Subtotal</dt>
-                    <dd>{money(totals.subtotal)}</dd>
-                  </div>
-                  {totals.discount > 0 && (
-                    <div>
-                      <dt>Discount</dt>
-                      <dd>−{money(totals.discount)}</dd>
-                    </div>
-                  )}
-                  <div>
-                    <dt>Tax ({totals.taxRate}%)</dt>
-                    <dd>{money(totals.tax)}</dd>
-                  </div>
-                  <div className="totals__grand">
-                    <dt>Total</dt>
-                    <dd>{money(totals.total)}</dd>
-                  </div>
-                  <div>
-                    <dt>Balance due</dt>
-                    <dd>{money(totals.balance)}</dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
-          </section>
 
           <section className="card">
             <div className="card__head">
