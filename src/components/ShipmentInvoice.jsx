@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
+import JsBarcode from 'jsbarcode';
 import './shipmentInvoice.css';
 
 /*
@@ -20,11 +21,45 @@ const fmtDate = (iso, withTime = false) => {
   });
 };
 
+/** Code 128 barcode of the tracking number, as a PNG data URL. */
+function barcodeFor(code) {
+  try {
+    const canvas = document.createElement('canvas');
+    JsBarcode(canvas, code, { format: 'CODE128', width: 2, height: 64, margin: 0, displayValue: false, lineColor: '#11194E' });
+    return canvas.toDataURL('image/png');
+  } catch {
+    return '';
+  }
+}
+
+function Party({ label, party = {}, place }) {
+  const rows = [
+    ['Address', party.address || place],
+    ['Phone', party.phone],
+    ['Email', party.email],
+  ].filter(([, v]) => v);
+  return (
+    <div>
+      <p className="sinv-label">{label}</p>
+      <strong>{party.name || '—'}</strong>
+      <dl>
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 export const trackUrlFor = (code) => `${window.location.origin}/track?code=${encodeURIComponent(code)}`;
 
 export default function ShipmentInvoice({ shipment: s, company = {} }) {
   const sheet = useRef(null);
   const [qr, setQr] = useState('');
+  const [barcode, setBarcode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const trackUrl = trackUrlFor(s.trackingNumber);
@@ -34,7 +69,8 @@ export default function ShipmentInvoice({ shipment: s, company = {} }) {
     QRCode.toDataURL(trackUrl, { width: 360, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#11194E', light: '#FFFFFF' } })
       .then(setQr)
       .catch(() => setQr(''));
-  }, [trackUrl]);
+    setBarcode(barcodeFor(s.trackingNumber));
+  }, [trackUrl, s.trackingNumber]);
 
   const download = async () => {
     setBusy(true);
@@ -121,16 +157,8 @@ export default function ShipmentInvoice({ shipment: s, company = {} }) {
 
         <div className="sinv-body">
           <section className="sinv-parties">
-            <div>
-              <p className="sinv-label">From (sender)</p>
-              <strong>{s.sender?.name || '—'}</strong>
-              <span>{s.sender?.address || s.origin}</span>
-            </div>
-            <div>
-              <p className="sinv-label">To (receiver)</p>
-              <strong>{s.receiver?.name || '—'}</strong>
-              <span>{s.receiver?.address || s.destination}</span>
-            </div>
+            <Party label="Sender information" party={s.sender} place={s.origin} />
+            <Party label="Receiver information" party={s.receiver} place={s.destination} />
           </section>
 
           <div className="sinv-route">
@@ -172,11 +200,17 @@ export default function ShipmentInvoice({ shipment: s, company = {} }) {
 
           <section className="sinv-qr">
             {qr ? <img src={qr} alt={`QR code for tracking ${s.trackingNumber}`} /> : <span className="sinv-qr__ph" />}
-            <div>
+            <div className="sinv-qr__text">
               <strong>Scan to track your shipment</strong>
-              <p>Point your phone camera at the code to follow {s.trackingNumber} live on the map.</p>
+              <p>Point your phone camera at the QR code to follow {s.trackingNumber} live on the map.</p>
               <code>{trackUrl}</code>
             </div>
+            {barcode && (
+              <div className="sinv-barcode">
+                <img src={barcode} alt={`Barcode ${s.trackingNumber}`} />
+                <span>{s.trackingNumber}</span>
+              </div>
+            )}
           </section>
 
           {company.terms && (
