@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import ShipmentMap from '../../components/ShipmentMap.jsx';
 import { DEFAULT_SPEEDS, formatKm } from '../../lib/tracking.js';
 import { useResource } from '../api.js';
-import { addEvent, createShipment, deleteEvent, deleteShipment, getSettings, getShipment, updateShipment } from '../data.js';
+import { addEvent, createShipment, deleteEvent, deleteShipment, getSettings, getShipment, listEmailLog, updateShipment } from '../data.js';
 import { normaliseInvoice } from '../invoice.js';
 import { locateRoute } from '../route.js';
 import { generateTrackingId } from '../../lib/trackingId.js';
@@ -588,10 +588,67 @@ export default function ShipmentForm() {
                 setForm((f) => ({ ...f, status: s.status }));
               }}
             />
+
+            <EmailLog shipmentId={shipment.id} status={shipment.status} />
           </aside>
         )}
       </div>
     </>
+  );
+}
+
+/* Emails sent automatically to the sender and receiver (see supabase/functions/notify-shipment). */
+function EmailLog({ shipmentId, status }) {
+  const [rows, setRows] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = () =>
+      listEmailLog(shipmentId)
+        .then((r) => active && setRows(r))
+        .catch(() => active && setRows([]));
+    load();
+    // emails go out a few seconds after a change: check again shortly
+    const timer = setTimeout(load, 9000);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [shipmentId, status]);
+
+  return (
+    <section className="card">
+      <div className="card__head">
+        <h2>Email notifications</h2>
+        <span className="muted small">Sender &amp; receiver</span>
+      </div>
+      <div className="card__body">
+        {rows === null ? (
+          <Loading />
+        ) : rows.length === 0 ? (
+          <p className="form-note">
+            Emails are sent automatically when the shipment is created and whenever its status changes, to the sender and
+            receiver email addresses above.
+          </p>
+        ) : (
+          <ul className="list" style={{ padding: 0 }}>
+            {rows.map((r) => (
+              <li key={r.id} style={{ padding: '10px 0' }}>
+                <div>
+                  <span className="strong">{r.recipient}</span>
+                  <span className="muted small">{r.subject}</span>
+                  {!r.ok && r.error && <span className="small" style={{ color: 'var(--bad)' }}>{r.error}</span>}
+                </div>
+                <div className="list__meta">
+                  <span className={`badge badge--${r.ok ? 'ok' : 'bad'}`}>{r.ok ? 'Sent' : 'Not sent'}</span>
+                  <span className="muted small">{formatDate(r.createdAt)}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 }
 

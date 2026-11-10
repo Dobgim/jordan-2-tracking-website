@@ -245,3 +245,10 @@ export async function changePassword(email, currentPassword, newPassword) {
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw friendlyError(error);
 }
+
+/* ---------------- email notifications ---------------- */
+export async function listEmailLog(shipmentId) {
+  return must(
+    await supabase.from('email_log').select('*').eq('shipment_id', shipmentId).order('created_at', { ascending: false }).limit(20)
+  ).map((r) => ({ id: r.id, recipient: r.recipient, subject: r.subject, ok: r.ok, error: r.error, createdAt: r.created_at }));
+}

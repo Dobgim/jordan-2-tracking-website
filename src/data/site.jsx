@@ -7,16 +7,17 @@ export const IMG = (name) => `/images/${name}`;
 
 export const company = {
   name: 'TheJordans',
-  phone: '+1800 – 668 333',
-  phoneHref: 'tel:+1800668333',
-  email: 'info@example.com',
-  address: '1234 Elmwood Avenue, Suite 500',
-  city: 'Atlanta, GA 30308, United States',
-  addressShort: '1234 Elmwood Ave, Ste 500, Atlanta, GA',
+  phone: '+1 (651) 394-2445',
+  phoneHref: 'tel:+16513942445',
+  email: 'support@thejordanslogistics.com',
+  address: '1939 Goldsmith Ln, Ste 233',
+  city: 'Louisville, KY 40218, United States',
+  addressShort: '1939 Goldsmith Ln, Ste 233, Louisville, KY',
   hours: ['Monday - Saturday: 7.30am - 17.30pm', 'Sunday - Holiday: Closes'],
   // the floating "Track & Help" widget
-  supportPhone: '1654987638',
-  supportEmail: 'thejordans@support.com',
+  supportPhone: '+1 (651) 394-2445',
+  supportPhoneHref: 'tel:+16513942445',
+  supportEmail: 'support@thejordanslogistics.com',
 };
 
 export const nav = [

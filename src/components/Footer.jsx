@@ -103,7 +103,7 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href="https://www.google.com/maps/search/?api=1&query=1234+Elmwood+Ave+Atlanta+GA" target="_blank" rel="noopener noreferrer" className="hover:text-brand">
+                <a href="https://www.google.com/maps/search/?api=1&query=1939+Goldsmith+Ln+Ste+233+Louisville+KY+40218" target="_blank" rel="noopener noreferrer" className="hover:text-brand">
                   {company.addressShort}
                 </a>
               </li>

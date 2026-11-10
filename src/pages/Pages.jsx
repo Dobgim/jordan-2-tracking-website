@@ -270,7 +270,7 @@ export function ContactPage() {
           <Reveal delay={150} className="min-h-[340px] overflow-hidden rounded-[13px] border border-line">
             <iframe
               title="TheJordans office location"
-              src="https://maps.google.com/maps?q=1234%20Elmwood%20Avenue%2C%20Atlanta%2C%20GA%2030308&z=14&output=embed"
+              src="https://maps.google.com/maps?q=1939%20Goldsmith%20Ln%2C%20Louisville%2C%20KY%2040218&z=14&output=embed"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               className="size-full min-h-[340px]"

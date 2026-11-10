@@ -55,7 +55,7 @@ export function HelpWidget() {
   };
 
   const options = [
-    { href: `tel:${company.supportPhone}`, icon: 'phone', color: 'text-navy', title: 'Call Us', sub: company.supportPhone },
+    { href: company.supportPhoneHref, icon: 'phone', color: 'text-navy', title: 'Call Us', sub: company.supportPhone },
     { href: `mailto:${company.supportEmail}`, icon: 'mail', color: 'text-navy', title: 'Email Us', sub: 'We reply within a few hours' },
   ];
 

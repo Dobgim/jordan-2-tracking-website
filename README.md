@@ -70,3 +70,18 @@ fallback for development.
 - `src/lib/` — Supabase calls, map loader, package-movement maths
 - `src/admin/` — admin dashboard (own entry `admin.html`, own stylesheet)
 - `supabase/migrations/` — database schema
+
+## Email notifications
+
+When a shipment is created, and every time its status changes, the sender and
+the receiver get an email (if their email addresses are filled in) with the
+status, route and a "Track your shipment live" button. Each shipment's admin
+page lists what was sent under **Email notifications**.
+
+How it works: a database trigger (`supabase/migrations/*_email_notifications.sql`)
+calls the `notify-shipment` Edge Function (`supabase/functions/`), which sends
+through the hosting mailbox `support@thejordanslogistics.com` over SMTP (SSL, port 465).
+
+To switch it on, create that mailbox in cPanel → Email Accounts, then in
+Supabase → Edge Functions → Secrets add `SMTP_PASS` = the mailbox password.
+(`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` and `NOTIFY_WEBHOOK_SECRET` are already set.)
