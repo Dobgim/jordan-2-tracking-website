@@ -1,0 +1,26 @@
+# Apache / cPanel / Hostinger: serve the React app for every page URL.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # real files and folders are served as they are
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # the admin dashboard
+  RewriteRule ^admin(/.*)?$ /admin.html [L]
+
+  # everything else: the public website
+  RewriteRule ^ /index.html [L]
+</IfModule>
+
+# hashed build files never change: cache them for a year
+<IfModule mod_headers.c>
+  <FilesMatch "^assets/.*\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

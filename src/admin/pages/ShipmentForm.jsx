@@ -9,6 +9,8 @@ import { locateRoute } from '../route.js';
 import { generateTrackingId } from '../../lib/trackingId.js';
 import { ErrorBox, FREIGHT_TYPES, Icon, Loading, PageHeader, SERVICES, STATUSES, StatusBadge, formatDate } from '../ui.jsx';
 
+const PIECE_TYPES = ['Box', 'Envelope', 'Pallet', 'Crate', 'Carton', 'Container', 'Vehicle', 'Other'];
+
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'XAF', 'NGN', 'GHS', 'ZAR', 'AED'];
 
 const toLocalInput = (iso) => {
@@ -19,6 +21,7 @@ const toLocalInput = (iso) => {
 };
 const fromLocalInput = (value) => (value ? new Date(value).toISOString() : null);
 const trackUrlFor = (code) => `${window.location.origin}/track?code=${encodeURIComponent(code)}`;
+const blankEvent = () => ({ status: 'Pending', date: toLocalInput(new Date().toISOString()), location: '', note: '' });
 const dateIn = (days) => new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
 
 const blankInvoice = (settings) => ({
@@ -42,10 +45,13 @@ const EMPTY = {
   weight: '',
   dimensions: '',
   estimatedDelivery: '',
+  estimatedDeliveryTime: '',
+  pieceType: '',
+  packageDescription: '',
   departureAt: '',
   speedKmh: DEFAULT_SPEEDS['Truck Freight'],
   notes: '',
-  sender: { name: '', phone: '', email: '' },
+  sender: { name: '', phone: '', email: '', address: '' },
   receiver: { name: '', phone: '', email: '', address: '' },
   invoice: null, // filled from Settings once they load
 };
@@ -60,6 +66,9 @@ const toForm = (s) => ({
   weight: s.weight || '',
   dimensions: s.dimensions || '',
   estimatedDelivery: s.estimatedDelivery || '',
+  estimatedDeliveryTime: s.estimatedDeliveryTime || '',
+  pieceType: s.pieceType || '',
+  packageDescription: s.packageDescription || '',
   departureAt: toLocalInput(s.departureAt),
   speedKmh: s.speedKmh ?? DEFAULT_SPEEDS[s.freightType] ?? 60,
   notes: s.notes || '',
@@ -111,6 +120,10 @@ export default function ShipmentForm() {
       : null
   );
   const [shipment, setShipment] = useState(null);
+  // timeline events entered while creating a shipment (saved right after it)
+  const [newEvents, setNewEvents] = useState(() => (isNew ? [blankEvent()] : []));
+  const setNewEvent = (i, key) => (e) =>
+    setNewEvents((list) => list.map((ev, j) => (j === i ? { ...ev, [key]: e.target.value } : ev)));
   const [loadError, setLoadError] = useState('');
   const [saving, setSaving] = useState('');
   const [error, setError] = useState('');
@@ -200,6 +213,10 @@ export default function ShipmentForm() {
 
       if (isNew) {
         const created = await createShipment(payload);
+        const events = newEvents.filter((ev) => ev.location.trim() || ev.note.trim());
+        for (const ev of events) {
+          await addEvent(created.id, { ...ev, date: fromLocalInput(ev.date) || new Date().toISOString() });
+        }
         navigate(`/shipments/${created.id}`, {
           replace: true,
           state: {
@@ -367,8 +384,25 @@ export default function ShipmentForm() {
                 <input value={form.dimensions} onChange={set('dimensions')} placeholder="L × W × H" />
               </label>
               <label className="field">
-                <span>Estimated delivery</span>
+                <span>Piece type</span>
+                <select value={form.pieceType} onChange={set('pieceType')}>
+                  <option value="">Select type</option>
+                  {PIECE_TYPES.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>Expected delivery date</span>
                 <input type="date" value={form.estimatedDelivery} onChange={set('estimatedDelivery')} />
+              </label>
+              <label className="field">
+                <span>Expected delivery time</span>
+                <input type="time" value={form.estimatedDeliveryTime} onChange={set('estimatedDeliveryTime')} />
+              </label>
+              <label className="field span-2">
+                <span>Package description</span>
+                <textarea value={form.packageDescription} onChange={set('packageDescription')} placeholder="Describe the package contents" />
               </label>
             </div>
           </section>
@@ -431,6 +465,10 @@ export default function ShipmentForm() {
                   <span>Email</span>
                   <input type="email" value={form.sender.email} onChange={setParty('sender', 'email')} />
                 </label>
+                <label className="field">
+                  <span>Address</span>
+                  <input value={form.sender.address || ''} onChange={setParty('sender', 'address')} placeholder="Full address" />
+                </label>
               </div>
             </section>
 
@@ -458,6 +496,53 @@ export default function ShipmentForm() {
               </div>
             </section>
           </div>
+
+          {isNew && (
+            <section className="card">
+              <div className="card__head">
+                <h2>Timeline events</h2>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={() => setNewEvents((l) => [...l, blankEvent()])}>
+                  <Icon name="plus" size={14} />
+                  Add event
+                </button>
+              </div>
+              <div className="card__body stack stack--tight">
+                {newEvents.length === 0 && <p className="form-note">No events yet. Add the first tracking update the customer will see.</p>}
+                {newEvents.map((ev, i) => (
+                  <div key={i} className="event-row">
+                    <label className="field">
+                      <span>Status</span>
+                      <select value={ev.status} onChange={setNewEvent(i, 'status')}>
+                        {STATUSES.map((s) => (
+                          <option key={s}>{s}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span>Date &amp; time</span>
+                      <input type="datetime-local" value={ev.date} onChange={setNewEvent(i, 'date')} />
+                    </label>
+                    <label className="field">
+                      <span>Location</span>
+                      <input value={ev.location} onChange={setNewEvent(i, 'location')} placeholder="e.g. London, UK" />
+                    </label>
+                    <label className="field">
+                      <span>Note for the customer</span>
+                      <input value={ev.note} onChange={setNewEvent(i, 'note')} placeholder="e.g. Package received at our hub" />
+                    </label>
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn--danger event-row__x"
+                      aria-label="Remove event"
+                      onClick={() => setNewEvents((l) => l.filter((_, j) => j !== i))}
+                    >
+                      <Icon name="trash" size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="card">
             <div className="card__head">

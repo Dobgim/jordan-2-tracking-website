@@ -1259,6 +1259,50 @@ tr.is-clickable:hover td {
   }
 }
 
+/* ---------- additions: page title, sidebar logout, events, row actions ---------- */
+.topbar__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.navlink--logout {
+  width: 100%;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+.navlink--logout:hover {
+  color: #fff;
+  background: rgba(254, 0, 11, 0.22);
+}
+.event-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px 44px 14px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: #fafafc;
+}
+.event-row__x {
+  position: absolute;
+  top: 8px;
+  right: 6px;
+}
+.row-actions .icon-btn + .icon-btn {
+  margin-left: 2px;
+}
+@media (max-width: 640px) {
+  .event-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .topbar__title {
+    font-size: 16px;
+  }
+}
+
 /* ---------- responsive ---------- */
 @media (max-width: 1100px) {
   .grid-2,

@@ -121,12 +121,15 @@ function ShipmentResult({ shipment, mapsKey, clockOffset }) {
         })}
       </ol>
 
-      {(shipment.freightType || shipment.weight || shipment.service) && (
+      {(shipment.freightType || shipment.weight || shipment.service || shipment.pieceType) && (
         <dl className="mt-9 grid gap-3 sm:grid-cols-3">
           {[
             ['Freight', shipment.freightType],
             ['Weight', shipment.weight],
             ['Service', shipment.service],
+            ['Piece type', shipment.pieceType],
+            ['Expected time', shipment.estimatedDeliveryTime],
+            ['Package', shipment.packageDescription],
           ]
             .filter(([, v]) => v)
             .map(([k, v]) => (

@@ -138,13 +138,8 @@ function Layout() {
     <div className={`shell${menuOpen ? ' shell--menu' : ''}`}>
       <aside className="sidebar">
         <div className="sidebar__brand">
-          <span className="brand-mark" aria-hidden="true">
-            <span>TJ</span>
-          </span>
-          <span className="brand-name">
-            TheJordans
-            <em>Logistics</em>
-          </span>
+          <img src="/images/logo-light.webp" alt="TheJordans" />
+          <span className="sidebar__tag">Admin</span>
         </div>
         <nav className="sidebar__nav">
           {NAV.map((item) => (
@@ -181,10 +176,8 @@ function Layout() {
           <h1 className="topbar__title">{pageTitle(location.pathname)}</h1>
           <div className="topbar__spacer" />
           <div className="topbar__user">
-            <span>Admin</span>
-            <span className="avatar" title={user.email}>
-              {user.email[0].toUpperCase()}
-            </span>
+            <span className="avatar">{user.email[0].toUpperCase()}</span>
+            <span>{user.email}</span>
           </div>
         </header>
         <main className="content">

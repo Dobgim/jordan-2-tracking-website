@@ -1,13 +1,23 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useResource } from '../api.js';
 import { useAuth } from '../AdminApp.jsx';
-import { getStats } from '../data.js';
+import { deleteShipment, getStats } from '../data.js';
 import { EmptyState, ErrorBox, Icon, Loading, PageHeader, QuoteBadge, STATUSES, StatusBadge, formatDate } from '../ui.jsx';
 
 export default function Overview() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data, error, loading, reload } = useResource(getStats);
+
+  const remove = async (s) => {
+    if (!window.confirm(`Delete shipment ${s.trackingNumber}? Customers will no longer be able to track it.`)) return;
+    try {
+      await deleteShipment(s.id);
+      reload();
+    } catch (err) {
+      window.alert(err.message);
+    }
+  };
 
   const header = (
     <PageHeader
@@ -65,10 +75,10 @@ export default function Overview() {
               <table>
                 <thead>
                   <tr>
-                    <th>Tracking #</th>
-                    <th>Route</th>
+                    <th>Tracking ID</th>
+                    <th>Destination</th>
                     <th>Status</th>
-                    <th>Updated</th>
+                    <th className="row-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -76,14 +86,37 @@ export default function Overview() {
                     <tr key={s.id} className="is-clickable" onClick={() => navigate(`/shipments/${s.id}`)}>
                       <td className="mono strong">{s.trackingNumber}</td>
                       <td>
-                        <span className="route">
-                          {s.origin} <Icon name="arrow" size={12} /> {s.destination}
+                        <span className="route" title={`${s.origin} → ${s.destination}`}>
+                          {s.destination}
                         </span>
                       </td>
                       <td>
                         <StatusBadge status={s.status} />
                       </td>
-                      <td className="muted nowrap">{formatDate(s.updatedAt)}</td>
+                      <td className="row-actions" onClick={(e) => e.stopPropagation()}>
+                        <Link to={`/shipments/${s.id}`} className="icon-btn" title="Edit" aria-label={`Edit ${s.trackingNumber}`}>
+                          <Icon name="edit" size={16} />
+                        </Link>
+                        <a
+                          href={`/track?code=${encodeURIComponent(s.trackingNumber)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="icon-btn"
+                          title="View tracking page"
+                          aria-label={`View tracking page for ${s.trackingNumber}`}
+                        >
+                          <Icon name="external" size={16} />
+                        </a>
+                        <button
+                          type="button"
+                          className="icon-btn icon-btn--danger"
+                          title="Delete"
+                          aria-label={`Delete ${s.trackingNumber}`}
+                          onClick={() => remove(s)}
+                        >
+                          <Icon name="trash" size={16} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
