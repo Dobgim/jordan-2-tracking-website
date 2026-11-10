@@ -92,7 +92,7 @@ export default function Invoice() {
       <article className="invoice">
         <header className="inv-top">
           <div className="inv-brand">
-            <img src="/uploads/2026/02/logo-light.webp" alt={co.company_name} />
+            <img src="/images/logo-light.webp" alt={co.company_name} />
             <strong>{co.company_name}</strong>
             {companyLines.map((line) => (
               <p key={line}>{line}</p>

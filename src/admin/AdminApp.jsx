@@ -15,7 +15,7 @@ const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
 const NAV = [
-  { to: '/', label: 'Overview', icon: 'dashboard', end: true },
+  { to: '/', label: 'Dashboard', icon: 'dashboard', end: true },
   { to: '/shipments', label: 'Shipments', icon: 'truck' },
   { to: '/quotes', label: 'Quote requests', icon: 'quote' },
   { to: '/subscribers', label: 'Subscribers', icon: 'mail' },
@@ -116,6 +116,17 @@ function KeyedShipmentForm() {
   return <ShipmentForm key={id} />;
 }
 
+function pageTitle(path) {
+  if (path === '/' || path === '') return 'Dashboard Overview';
+  if (path === '/shipments/new') return 'Create New Shipment';
+  if (/^\/shipments\/[^/]+$/.test(path)) return 'Shipment Details';
+  if (path.startsWith('/shipments')) return 'Shipments';
+  if (path.startsWith('/quotes')) return 'Quote Requests';
+  if (path.startsWith('/subscribers')) return 'Subscribers';
+  if (path.startsWith('/settings')) return 'Settings';
+  return 'Dashboard';
+}
+
 function Layout() {
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -127,8 +138,13 @@ function Layout() {
     <div className={`shell${menuOpen ? ' shell--menu' : ''}`}>
       <aside className="sidebar">
         <div className="sidebar__brand">
-          <img src="/uploads/2026/02/logo-light.webp" alt="TheJordans" />
-          <span className="sidebar__tag">Admin</span>
+          <span className="brand-mark" aria-hidden="true">
+            <span>TJ</span>
+          </span>
+          <span className="brand-name">
+            TheJordans
+            <em>Logistics</em>
+          </span>
         </div>
         <nav className="sidebar__nav">
           {NAV.map((item) => (
@@ -148,6 +164,10 @@ function Layout() {
             <Icon name="external" />
             View website
           </a>
+          <button type="button" className="navlink navlink--logout" onClick={logout}>
+            <Icon name="logout" />
+            Logout
+          </button>
         </div>
       </aside>
 
@@ -158,15 +178,14 @@ function Layout() {
           <button type="button" className="icon-btn topbar__menu" onClick={() => setMenuOpen(true)} aria-label="Open menu">
             <Icon name="menu" />
           </button>
+          <h1 className="topbar__title">{pageTitle(location.pathname)}</h1>
           <div className="topbar__spacer" />
           <div className="topbar__user">
-            <span className="avatar">{user.email[0].toUpperCase()}</span>
-            <span>{user.email}</span>
+            <span>Admin</span>
+            <span className="avatar" title={user.email}>
+              {user.email[0].toUpperCase()}
+            </span>
           </div>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={logout}>
-            <Icon name="logout" size={16} />
-            Sign out
-          </button>
         </header>
         <main className="content">
           <Outlet />

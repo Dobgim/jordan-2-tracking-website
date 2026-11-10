@@ -6,6 +6,7 @@ import { useResource } from '../api.js';
 import { addEvent, createShipment, deleteEvent, deleteShipment, getSettings, getShipment, updateShipment } from '../data.js';
 import { computeInvoice, formatMoney, normaliseInvoice } from '../invoice.js';
 import { locateRoute } from '../route.js';
+import { generateTrackingId } from '../../lib/trackingId.js';
 import { ErrorBox, FREIGHT_TYPES, Icon, Loading, PageHeader, SERVICES, STATUSES, StatusBadge, formatDate } from '../ui.jsx';
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'XAF', 'NGN', 'GHS', 'ZAR', 'AED'];
@@ -105,7 +106,9 @@ export default function ShipmentForm() {
   const { data: settings } = useResource(() => getSettings());
 
   const [form, setForm] = useState(() =>
-    isNew ? (location.state?.fromQuote ? fromQuote(location.state.fromQuote) : EMPTY) : null
+    isNew
+      ? { ...(location.state?.fromQuote ? fromQuote(location.state.fromQuote) : EMPTY), trackingNumber: generateTrackingId() }
+      : null
   );
   const [shipment, setShipment] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -264,7 +267,7 @@ export default function ShipmentForm() {
           isNew ? (
             location.state?.fromQuote
               ? 'Pre-filled from a quote request — check the details and save.'
-              : 'Leave the tracking number empty to generate one.'
+              : 'A unique tracking number has been generated — share it with your customer after saving.'
           ) : (
             <>
               <StatusBadge status={shipment.status} />
@@ -314,9 +317,21 @@ export default function ShipmentForm() {
             <div className="card__body form-grid">
               <label className="field">
                 <span>
-                  Tracking number <em className="hint">{isNew ? 'optional' : ''}</em>
+                  Tracking number <em className="hint">{isNew ? 'auto-generated' : ''}</em>
                 </span>
-                <input className="mono" value={form.trackingNumber} onChange={set('trackingNumber')} placeholder="Auto-generated" />
+                <div className="input-group">
+                  <input className="mono" value={form.trackingNumber} onChange={set('trackingNumber')} placeholder="TJ-2026-XXXXXXX" />
+                  {isNew && (
+                    <button
+                      type="button"
+                      className="input-group__btn"
+                      title="Generate a new tracking number"
+                      onClick={() => setForm((f) => ({ ...f, trackingNumber: generateTrackingId() }))}
+                    >
+                      New
+                    </button>
+                  )}
+                </div>
               </label>
               <label className="field">
                 <span>Status</span>

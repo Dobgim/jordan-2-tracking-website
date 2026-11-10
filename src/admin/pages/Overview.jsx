@@ -16,7 +16,7 @@ export default function Overview() {
       actions={
         <Link to="/shipments/new" className="btn btn--primary">
           <Icon name="plus" size={16} />
-          New shipment
+          Create New Shipment
         </Link>
       }
     />

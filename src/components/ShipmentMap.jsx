@@ -171,28 +171,34 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
         });
         overlays = [remaining, covered, start, end, pkg];
 
+        // Numbers and the package marker refresh 5x a second so the receiver
+        // can see it creep forward even when the whole route is on screen;
+        // the (heavier) covered-route line is redrawn once a second.
+        let ticks = 0;
         const tick = () => {
           const cur = live.current;
           const now = Date.now() + offset.current;
           const routeKm = cur.routeDistanceKm !== null && cur.routeDistanceKm !== undefined ? Number(cur.routeDistanceKm) : pathMeters / 1000;
           const km = coveredKm(cur, routeKm, now);
-          const fraction = routeKm ? km / routeKm : 0;
+          const fraction = routeKm ? Math.min(1, km / routeKm) : 0;
           const { point, index } = pointAlong(google, path, cumulative, fraction * pathMeters);
           pkg.setPosition(point);
-          covered.setPath([...path.slice(0, index), point]);
-          if (followRef.current) map.panTo(point);
+          if (ticks++ % 5 === 0) {
+            covered.setPath([...path.slice(0, index), point]);
+            if (followRef.current) map.panTo(point);
+          }
           const state = movementState(cur, km, routeKm, now);
           setStats({
             covered: km,
             total: routeKm,
-            percent: Math.min(100, Math.round(fraction * 1000) / 10),
+            fraction,
             state,
             arrival: arrivalMs(cur, km, routeKm, now),
             now,
           });
         };
         tick();
-        timer = setInterval(tick, 1000);
+        timer = setInterval(tick, 200);
       })
       .catch((err) => !cancelled && setError(err.message));
 
@@ -223,12 +229,29 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
   }
 
   const moving = stats?.state.key === 'moving';
+  const speed = Number(shipment.speedKmh) || 0;
+  // show enough decimals that the last digit changes every second while moving
+  const percentDigits =
+    moving && stats.total ? Math.min(5, Math.max(2, Math.ceil(-Math.log10((speed / 3600 / stats.total) * 100)))) : 1;
+  const percentText = stats ? (stats.fraction * 100).toFixed(percentDigits) : '0';
+  const kmText = stats ? (moving ? `${stats.covered.toFixed(3)} km` : formatKm(stats.covered)) : '';
+  const vehicle = VEHICLE_BY_FREIGHT[shipment.freightType] || 'truck';
 
   return (
     <div className="tj-mapbox">
       <div className="tj-map" style={{ height }}>
         <div ref={canvas} className="tj-map__canvas" />
         {error && <div className="tj-map__error">{error}</div>}
+        {!error && stats && (
+          <div className={`tj-map__hud tj-map__hud--${stats.state.key}`} aria-live="off">
+            <span className="tj-map__hud-label">
+              <span className="tj-map__dot" />
+              {moving ? 'Live' : stats.state.key === 'delivered' ? 'Delivered' : 'Progress'}
+            </span>
+            <strong className="tj-map__hud-percent">{percentText}%</strong>
+            <span className="tj-map__hud-km">{kmText} covered</span>
+          </div>
+        )}
         {!error && stats && (
           <button type="button" className={`tj-map__follow${follow ? ' is-on' : ''}`} onClick={toggleFollow}>
             {follow ? 'Following package' : 'Follow package'}
@@ -243,23 +266,32 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
               <span className="tj-map__dot" />
               {stats.state.label}
             </span>
-            <span className="tj-map__percent">{stats.percent}% of the journey</span>
+            <span className="tj-map__percent">
+              <strong>{percentText}%</strong> of the journey completed
+            </span>
           </div>
-          <div className="tj-map__bar" aria-hidden="true">
-            <span style={{ width: `${stats.percent}%` }} />
+          <div className={`tj-map__bar${moving ? ' is-moving' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(stats.fraction * 100)}>
+            <span className="tj-map__fill" style={{ width: `${stats.fraction * 100}%` }} />
+            <span className="tj-map__rider" style={{ left: `${stats.fraction * 100}%` }} aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: VEHICLE_ICONS[vehicle] }} />
+            </span>
+          </div>
+          <div className="tj-map__ends">
+            <span>{shipment.origin}</span>
+            <span>{shipment.destination}</span>
           </div>
           <dl className="tj-map__facts">
             <div>
               <dt>Covered</dt>
-              <dd>{formatKm(stats.covered)}</dd>
+              <dd>{kmText}</dd>
             </div>
             <div>
               <dt>Remaining</dt>
-              <dd>{formatKm(Math.max(0, stats.total - stats.covered))}</dd>
+              <dd>{moving ? `${Math.max(0, stats.total - stats.covered).toFixed(3)} km` : formatKm(Math.max(0, stats.total - stats.covered))}</dd>
             </div>
             <div>
               <dt>Speed</dt>
-              <dd>{moving ? `${Math.round(Number(shipment.speedKmh))} km/h` : '0 km/h'}</dd>
+              <dd>{moving ? `${Math.round(speed)} km/h` : '0 km/h'}</dd>
             </div>
             <div>
               <dt>{stats.arrival ? 'Arrives in' : 'Total route'}</dt>

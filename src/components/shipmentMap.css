@@ -103,17 +103,112 @@
   font-size: 13px;
   color: #5b6078;
 }
+.tj-mapbox .tj-map__percent strong {
+  color: #11194e;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
 .tj-mapbox .tj-map__bar {
-  height: 6px;
+  position: relative;
+  height: 10px;
+  margin: 14px 11px 0;
   border-radius: 999px;
   background: #eeeff3;
-  overflow: hidden;
 }
-.tj-mapbox .tj-map__bar span {
-  display: block;
-  height: 100%;
+.tj-mapbox .tj-map__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
   border-radius: inherit;
   background: linear-gradient(90deg, #11194e, #fe000b);
+  transition: width 0.2s linear;
+}
+/* moving stripes: the bar visibly flows while the package is on the move */
+.tj-mapbox .tj-map__bar.is-moving .tj-map__fill {
+  background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 6px, transparent 6px 12px),
+    linear-gradient(90deg, #11194e, #fe000b);
+  background-size: 17px 17px, 100% 100%;
+  animation: tj-map-flow 0.8s linear infinite;
+}
+.tj-mapbox .tj-map__rider {
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  margin-left: -13px;
+  margin-top: -13px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fe000b;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(17, 25, 78, 0.35);
+  transition: left 0.2s linear;
+}
+.tj-mapbox .tj-map__ends {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #8a8fa6;
+}
+.tj-mapbox .tj-map__ends span:last-child {
+  text-align: right;
+}
+
+/* live read-out floating on the map, visible without zooming in */
+.tj-mapbox .tj-map__hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 9px 13px 10px;
+  border-radius: 12px;
+  background: rgba(17, 25, 78, 0.92);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(17, 25, 78, 0.3);
+  pointer-events: none;
+  min-width: 150px;
+}
+.tj-mapbox .tj-map__hud-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+.tj-mapbox .tj-map__hud--moving .tj-map__dot {
+  background: #22c55e;
+  animation: tj-map-pulse 1.8s infinite;
+}
+.tj-mapbox .tj-map__hud--paused .tj-map__dot,
+.tj-mapbox .tj-map__hud--arriving .tj-map__dot {
+  background: #f59e0b;
+}
+.tj-mapbox .tj-map__hud--delivered .tj-map__dot {
+  background: #22c55e;
+}
+.tj-mapbox .tj-map__hud-percent {
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.tj-mapbox .tj-map__hud-km {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.78);
+  font-variant-numeric: tabular-nums;
+}
+@keyframes tj-map-flow {
+  to {
+    background-position: 17px 0, 0 0;
+  }
 }
 .tj-mapbox .tj-map__facts {
   display: grid;
@@ -153,12 +248,21 @@
   }
 }
 @media (max-width: 520px) {
+  .tj-mapbox .tj-map__hud {
+    min-width: 0;
+    padding: 7px 10px 8px;
+  }
+  .tj-mapbox .tj-map__hud-percent {
+    font-size: 19px;
+  }
   .tj-mapbox .tj-map__facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tj-mapbox .tj-map__state--moving .tj-map__dot {
+  .tj-mapbox .tj-map__state--moving .tj-map__dot,
+  .tj-mapbox .tj-map__hud--moving .tj-map__dot,
+  .tj-mapbox .tj-map__bar.is-moving .tj-map__fill {
     animation: none;
   }
 }

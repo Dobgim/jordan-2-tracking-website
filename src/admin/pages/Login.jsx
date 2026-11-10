@@ -29,7 +29,7 @@ export default function Login() {
   return (
     <div className="login">
       <section className="login__panel" aria-hidden="true">
-        <img src="/uploads/2026/02/logo-light.webp" alt="" className="login__panel-logo" />
+        <img src="/images/logo-light.webp" alt="" className="login__panel-logo" />
         <div>
           <p className="login__eyebrow">Operations console</p>
           <h2>Every shipment, quote and customer in one place.</h2>
@@ -43,7 +43,7 @@ export default function Login() {
 
       <section className="login__form-wrap">
         <form className="login__card" onSubmit={submit} noValidate>
-          <img src="/uploads/2026/02/logo.webp" alt="TheJordans" className="login__logo" />
+          <img src="/images/logo-light.webp" alt="TheJordans" className="login__logo" />
           <h1>Sign in to the dashboard</h1>
           <p className="muted">Use your administrator account.</p>
 
