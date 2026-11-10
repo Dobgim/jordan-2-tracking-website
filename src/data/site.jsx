@@ -15,8 +15,7 @@ export const company = {
   addressShort: '1234 Elmwood Ave, Ste 500, Atlanta, GA',
   hours: ['Monday - Saturday: 7.30am - 17.30pm', 'Sunday - Holiday: Closes'],
   // the floating "Track & Help" widget
-  supportPhone: '1231232131',
-  whatsapp: 'https://wa.me/1231232131?text=Hello%20TheJordans!',
+  supportPhone: '1654987638',
   supportEmail: 'thejordans@support.com',
 };
 
