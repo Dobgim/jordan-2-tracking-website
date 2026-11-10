@@ -42,15 +42,30 @@ const svgIcon = (google, svg, size) => ({
   anchor: new google.maps.Point(size / 2, size / 2),
 });
 
-const packageIcon = (google, kind) =>
-  svgIcon(
+/*
+ * The package badge faces its final destination: road/rail/sea vehicles
+ * (drawn facing right) flip to face left when the destination lies to the
+ * west, planes rotate to the exact bearing, and a pointer on the rim always
+ * aims straight at the destination. `heading` is degrees clockwise from north.
+ */
+const packageIcon = (google, kind, heading = 90) => {
+  const h = Math.round(heading);
+  const vehicle =
+    kind === 'plane'
+      ? `rotate(${h} 28 28) translate(16 16)`
+      : h < 0 || h > 180
+        ? 'translate(40 16) scale(-1 1)'
+        : 'translate(16 16)';
+  return svgIcon(
     google,
-    `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-      <circle cx="24" cy="24" r="21" fill="#FE000B" stroke="#fff" stroke-width="3"/>
-      <g transform="translate(12 12)" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${VEHICLE_ICONS[kind]}</g>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
+      <g transform="rotate(${h} 28 28)"><path d="M28 1.5 35 10.5H21z" fill="#11194E" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></g>
+      <circle cx="28" cy="28" r="19" fill="#FE000B" stroke="#fff" stroke-width="3"/>
+      <g transform="${vehicle}" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${VEHICLE_ICONS[kind]}</g>
     </svg>`,
-    48
+    56
   );
+};
 
 const pointIcon = (google, color, letter) =>
   svgIcon(
@@ -162,10 +177,13 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
         const covered = new google.maps.Polyline({ map, path: [], geodesic, strokeColor: '#11194E', strokeOpacity: 1, strokeWeight: 5 });
         const start = new google.maps.Marker({ map, position: path[0], icon: pointIcon(google, '#11194E', 'A'), title: s.origin, zIndex: 2 });
         const end = new google.maps.Marker({ map, position: path[path.length - 1], icon: pointIcon(google, '#FE000B', 'B'), title: s.destination, zIndex: 2 });
+        const kind = VEHICLE_BY_FREIGHT[s.freightType] || 'truck';
+        const destPoint = path[path.length - 1];
+        let lastHeading = null;
         const pkg = new google.maps.Marker({
           map,
           position: path[0],
-          icon: packageIcon(google, VEHICLE_BY_FREIGHT[s.freightType] || 'truck'),
+          icon: packageIcon(google, kind, google.maps.geometry.spherical.computeHeading(path[0], destPoint)),
           title: 'Your package',
           zIndex: 10,
         });
@@ -183,6 +201,14 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
           const fraction = routeKm ? Math.min(1, km / routeKm) : 0;
           const { point, index } = pointAlong(google, path, cumulative, fraction * pathMeters);
           pkg.setPosition(point);
+          // keep the vehicle facing its final destination (re-drawn only when the bearing changes)
+          if (google.maps.geometry.spherical.computeDistanceBetween(point, destPoint) > 50) {
+            const heading = Math.round(google.maps.geometry.spherical.computeHeading(point, destPoint) / 5) * 5;
+            if (heading !== lastHeading) {
+              lastHeading = heading;
+              pkg.setIcon(packageIcon(google, kind, heading));
+            }
+          }
           if (ticks++ % 5 === 0) {
             covered.setPath([...path.slice(0, index), point]);
             if (followRef.current) map.panTo(point);
