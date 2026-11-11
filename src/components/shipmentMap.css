@@ -266,3 +266,106 @@
     animation: none;
   }
 }
+
+/* Cards pinned above the origin, the destination and the moving package */
+.tj-mapbox .tj-maptag {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  --lift: 24px;
+}
+.tj-mapbox .tj-maptag--pkg {
+  --lift: 34px;
+  z-index: 3;
+}
+.tj-mapbox .tj-maptag__card {
+  position: absolute;
+  left: 0;
+  bottom: var(--lift);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 290px;
+  padding: 6px 11px 7px;
+  border-radius: 6px;
+  border: 2px solid #11194e;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(17, 25, 78, 0.22);
+  white-space: nowrap;
+  font-family: 'Public Sans', system-ui, sans-serif;
+}
+/* the stem joining the card to its point */
+.tj-mapbox .tj-maptag__card::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 0;
+  height: calc(var(--lift) - 12px);
+  margin-left: -1px;
+  border-left: 2px solid #11194e;
+}
+.tj-mapbox .tj-maptag__k {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a8fa6;
+}
+.tj-mapbox .tj-maptag__v {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 700;
+  color: #11194e;
+}
+.tj-mapbox .tj-maptag--dest .tj-maptag__card,
+.tj-mapbox .tj-maptag--dest .tj-maptag__card::after {
+  border-color: #fe000b;
+}
+.tj-mapbox .tj-maptag--dest .tj-maptag__v {
+  color: #c2000a;
+}
+.tj-mapbox .tj-maptag--pkg .tj-maptag__card {
+  background: #11194e;
+  border-color: #11194e;
+  border-right: 5px solid #fe000b;
+}
+.tj-mapbox .tj-maptag--pkg .tj-maptag__card::after {
+  border-color: #11194e;
+}
+.tj-mapbox .tj-maptag--pkg .tj-maptag__k {
+  color: #9aa2d6;
+}
+.tj-mapbox .tj-maptag--pkg .tj-maptag__v {
+  color: #fff;
+}
+
+/* "Current location" line under the map */
+.tj-mapbox .tj-map__where {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #5b6078;
+}
+.tj-mapbox .tj-map__where svg {
+  color: #fe000b;
+  flex-shrink: 0;
+}
+.tj-mapbox .tj-map__where strong {
+  color: #11194e;
+}
+@media (max-width: 520px) {
+  .tj-mapbox .tj-maptag__card {
+    max-width: 150px;
+    padding: 4px 8px 5px;
+  }
+  .tj-mapbox .tj-maptag__v {
+    font-size: 11.5px;
+  }
+}

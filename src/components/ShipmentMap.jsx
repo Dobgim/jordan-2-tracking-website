@@ -77,6 +77,106 @@ const pointIcon = (google, color, letter) =>
     30
   );
 
+/*
+ * Card pinned above a point on the map (ORIGIN / DESTINATION / the package's
+ * live status and current place). Built once per Google Maps instance.
+ */
+let TagClass = null;
+function mapTag(google, map, position, variant, key, value) {
+  if (!TagClass) {
+    TagClass = class extends google.maps.OverlayView {
+      constructor(pos, cls) {
+        super();
+        this.position = pos;
+        this.div = document.createElement('div');
+        this.div.className = `tj-maptag tj-maptag--${cls}`;
+        this.div.innerHTML = '<span class="tj-maptag__card"><span class="tj-maptag__k"></span><strong class="tj-maptag__v"></strong></span>';
+        this.k = this.div.querySelector('.tj-maptag__k');
+        this.v = this.div.querySelector('.tj-maptag__v');
+      }
+      setText(k, v) {
+        if (this.k.textContent !== k) this.k.textContent = k;
+        if (this.v.textContent !== v) {
+          this.v.textContent = v;
+          this.v.title = v;
+        }
+      }
+      moveTo(pos) {
+        this.position = pos;
+        this.draw();
+      }
+      onAdd() {
+        this.getPanes().floatPane.appendChild(this.div);
+      }
+      draw() {
+        const proj = this.getProjection();
+        if (!proj || !this.position) return;
+        const pt = proj.fromLatLngToDivPixel(this.position);
+        this.div.style.left = `${pt.x}px`;
+        this.div.style.top = `${pt.y}px`;
+      }
+      onRemove() {
+        this.div.remove();
+      }
+    };
+  }
+  const tag = new TagClass(position, variant);
+  tag.setText(key, value);
+  tag.setMap(map);
+  return tag;
+}
+
+/** "Quarter, Town, Country" from a reverse-geocoding result (or a sea/ocean name). */
+function placeName(results) {
+  if (!results?.length) return '';
+  const find = (...types) => {
+    for (const r of results) {
+      const c = r.address_components?.find((x) => types.some((t) => x.types.includes(t)));
+      if (c) return c.long_name;
+    }
+    return '';
+  };
+  const country = find('country');
+  if (!country) return find('natural_feature');
+  const quarter = find('neighborhood', 'sublocality_level_1', 'sublocality');
+  const town = find('locality', 'postal_town') || find('administrative_area_level_2');
+  const region = find('administrative_area_level_1');
+  const parts = [quarter, town, region, country].filter(Boolean);
+  return parts.filter((p, i) => parts.indexOf(p) === i).join(', ');
+}
+
+/* Rough sea / ocean name for a point the geocoder cannot name (open water). */
+const WATERS = [
+  ['Gulf of Mexico', 18, 31, -98, -81],
+  ['Caribbean Sea', 9, 22, -88, -60],
+  ['Mediterranean Sea', 30, 46, -6, 36],
+  ['Black Sea', 40.5, 47, 27, 42],
+  ['Red Sea', 12, 30, 32, 44],
+  ['Persian Gulf', 23, 30.5, 47, 57],
+  ['Arabian Sea', 5, 25, 51, 77],
+  ['Bay of Bengal', 5, 23, 79, 95],
+  ['South China Sea', 0, 23, 99, 121],
+  ['East China Sea', 23, 34, 117, 131],
+  ['Sea of Japan', 34, 52, 127, 142],
+  ['North Sea', 51, 61, -4, 9],
+  ['Baltic Sea', 53, 66, 9, 30],
+  ['Bay of Biscay', 43, 48, -10, -1],
+  ['English Channel', 48.5, 51, -6, 2],
+  ['Gulf of Guinea', -5, 7, -10, 10],
+  ['Coral Sea', -30, -9, 142, 165],
+  ['Tasman Sea', -45, -30, 147, 172],
+];
+function waterName(lat, lng) {
+  const hit = WATERS.find(([, a, b, c, d]) => lat >= a && lat <= b && lng >= c && lng <= d);
+  if (hit) return hit[0];
+  if (lat > 66) return 'Arctic Ocean';
+  if (lat < -60) return 'Southern Ocean';
+  if (lng >= 20 && lng < 120 && lat < 25) return 'Indian Ocean';
+  const half = lat >= 0 ? 'North' : 'South';
+  const atlantic = lng >= -100 && lng < 20 && !(lat < 15 && lng < -80) && !(lat < 9 && lng < -77);
+  return `${half} ${atlantic ? 'Atlantic' : 'Pacific'} Ocean`;
+}
+
 function buildPath(google, s) {
   if (s.routePolyline) {
     const decoded = google.maps.geometry.encoding.decodePath(s.routePolyline);
@@ -120,6 +220,7 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
   const [error, setError] = useState('');
   const [stats, setStats] = useState(null);
   const [follow, setFollow] = useState(false);
+  const [place, setPlace] = useState('');
   followRef.current = follow;
 
   const hasCoords = [shipment.originLat, shipment.originLng, shipment.destLat, shipment.destLng].every(
@@ -138,6 +239,7 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
     let overlays = [];
     setError('');
     setStats(null);
+    setPlace('');
 
     const onAuthFailure = () => setError('Google Maps rejected the API key. Check it in Admin → Settings.');
     window.addEventListener('tj:maps-auth-failure', onAuthFailure);
@@ -187,7 +289,41 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
           title: 'Your package',
           zIndex: 10,
         });
-        overlays = [remaining, covered, start, end, pkg];
+        const originTag = mapTag(google, map, path[0], 'origin', 'Origin', s.origin || '');
+        const destTag = mapTag(google, map, destPoint, 'dest', 'Destination', s.destination || '');
+        const pkgTag = mapTag(google, map, path[0], 'pkg', s.status || 'Status', s.origin || '');
+        overlays = [remaining, covered, start, end, pkg, originTag, destTag, pkgTag];
+
+        // Where the package is right now: reverse-geocoded when it has moved
+        // far enough (at most every 20 s), so the tag names the quarter, town
+        // and country it is passing through.
+        const geocoder = new google.maps.Geocoder();
+        const geo = { busy: false, pt: null, at: 0, status: null, name: '', water: false };
+        const locate = (point, fraction, status) => {
+          if (fraction <= 0.0005) return live.current.origin || '';
+          if (fraction >= 0.9995) return live.current.destination || '';
+          const stale =
+            geo.pt === null ||
+            geo.status !== status ||
+            (Date.now() - geo.at > 20000 && google.maps.geometry.spherical.computeDistanceBetween(point, geo.pt) > 1000);
+          if (stale && !geo.busy) {
+            geo.busy = true;
+            geo.pt = point;
+            geo.at = Date.now();
+            geo.status = status;
+            geocoder
+              .geocode({ location: point })
+              .then(({ results }) => placeName(results))
+              .catch(() => '')
+              .then((name) => {
+                geo.busy = false;
+                if (cancelled) return;
+                geo.water = !name;
+                geo.name = name || waterName(point.lat(), point.lng());
+              });
+          }
+          return geo.name || 'Locating…';
+        };
 
         // Numbers and the package marker refresh 5x a second so the receiver
         // can see it creep forward even when the whole route is on screen;
@@ -201,6 +337,18 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
           const fraction = routeKm ? Math.min(1, km / routeKm) : 0;
           const { point, index } = pointAlong(google, path, cumulative, fraction * pathMeters);
           pkg.setPosition(point);
+          pkgTag.moveTo(point);
+          const here = locate(point, fraction, cur.status);
+          const enRoute = geo.name && fraction > 0.0005 && fraction < 0.9995;
+          const text = !enRoute
+            ? here
+            : kind === 'plane' && isMoving(cur.status)
+              ? `Over ${geo.water ? 'the ' : ''}${here}`
+              : geo.water && kind !== 'ship'
+                ? `Near the ${here}`
+                : here;
+          pkgTag.setText(cur.status || 'Status', text);
+          setPlace(text);
           // keep the vehicle facing its final destination (re-drawn only when the bearing changes)
           if (google.maps.geometry.spherical.computeDistanceBetween(point, destPoint) > 50) {
             const heading = Math.round(google.maps.geometry.spherical.computeHeading(point, destPoint) / 5) * 5;
@@ -296,6 +444,16 @@ export default function ShipmentMap({ shipment, apiKey, clockOffsetMs = 0, heigh
               <strong>{percentText}%</strong> of the journey completed
             </span>
           </div>
+          {place && (
+            <p className="tj-map__where">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+                <circle cx="12" cy="9.5" r="2.5" />
+              </svg>
+              <span>Current location:</span>
+              <strong>{place}</strong>
+            </p>
+          )}
           <div className={`tj-map__bar${moving ? ' is-moving' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(stats.fraction * 100)}>
             <span className="tj-map__fill" style={{ width: `${stats.fraction * 100}%` }} />
             <span className="tj-map__rider" style={{ left: `${stats.fraction * 100}%` }} aria-hidden="true">
