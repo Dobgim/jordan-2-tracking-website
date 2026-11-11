@@ -122,7 +122,7 @@ export function HelpWidget() {
           className="relative flex h-[50px] items-center gap-3 bg-navy pr-5 pl-6 text-white sm:pr-7 sm:pl-7 shadow-[0_10px_30px_rgb(17_25_78/0.35)] transition-colors hover:bg-royal [clip-path:polygon(8%_0,100%_0,94%_100%,0_100%)]"
         >
           <Icon name="truck" size={20} />
-          <span className="hidden text-left leading-none xs:block">
+          <span className="block text-left leading-none">
             <span className="block text-[14px] font-bold tracking-wide">TRACK &amp; HELP</span>
             <span className="mt-1 flex items-center gap-1.5 text-[10px] text-white/75">
               <span className="size-1.5 rounded-full bg-emerald-400" />
