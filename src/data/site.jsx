@@ -17,6 +17,7 @@ export const company = {
   // the floating "Track & Help" widget
   supportPhone: '+1 (651) 394-2445',
   supportPhoneHref: 'tel:+16513942445',
+  supportSmsHref: 'sms:+16513942445',
   supportEmail: 'support@thejordanslogistics.com',
 };
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Icon from './Icon.jsx';
 import { company } from '../data/site.jsx';
 import { goToTracking } from '../lib/navigation.js';
+import { loadTawk, openTawkChat, TAWK_DIRECT_LINK } from '../lib/tawk.js';
 
 /** Bottom-left "back to top" button with a scroll-progress ring. */
 export function ScrollTop() {
@@ -41,6 +42,10 @@ export function HelpWidget() {
   const [code, setCode] = useState('');
 
   useEffect(() => {
+    loadTawk();
+  }, []);
+
+  useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => e.key === 'Escape' && setOpen(false);
     window.addEventListener('keydown', onKey);
@@ -55,7 +60,18 @@ export function HelpWidget() {
   };
 
   const options = [
-    { href: company.supportPhoneHref, icon: 'phone', color: 'text-navy', title: 'Call Us', sub: company.supportPhone },
+    {
+      href: TAWK_DIRECT_LINK,
+      icon: 'chat',
+      color: 'text-emerald-600',
+      title: 'Live Chat',
+      sub: 'Chat with an agent now',
+      onClick: (e) => {
+        e.preventDefault();
+        openTawkChat();
+      },
+    },
+    { href: company.supportSmsHref, icon: 'message', color: 'text-navy', title: 'Message Us', sub: company.supportPhone },
     { href: `mailto:${company.supportEmail}`, icon: 'mail', color: 'text-navy', title: 'Email Us', sub: 'We reply within a few hours' },
   ];
 
@@ -96,7 +112,10 @@ export function HelpWidget() {
                 <a
                   href={o.href}
                   {...(o.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                  onClick={() => setOpen(false)}
+                  onClick={(e) => {
+                    setOpen(false);
+                    o.onClick?.(e);
+                  }}
                   className="flex items-center gap-3.5 px-5 py-2.5 transition-colors hover:bg-mist"
                 >
                   <span className={`grid size-9 place-items-center rounded-full bg-mist ${o.color}`}>
