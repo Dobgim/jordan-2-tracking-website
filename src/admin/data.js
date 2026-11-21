@@ -252,3 +252,18 @@ export async function listEmailLog(shipmentId) {
     await supabase.from('email_log').select('*').eq('shipment_id', shipmentId).order('created_at', { ascending: false }).limit(20)
   ).map((r) => ({ id: r.id, recipient: r.recipient, subject: r.subject, ok: r.ok, error: r.error, createdAt: r.created_at }));
 }
+
+/** Sends one up-to-date email to every sender/receiver whose last email failed. */
+export async function resendFailedEmails(shipmentId) {
+  const { data, error } = await supabase.functions.invoke('notify-shipment', { body: { type: 'resend', shipment_id: shipmentId } });
+  if (error) {
+    let msg = error.message;
+    try {
+      msg = (await error.context.json()).error || msg;
+    } catch {
+      /* not a JSON error body */
+    }
+    throw friendlyError({ message: msg });
+  }
+  return data;
+}

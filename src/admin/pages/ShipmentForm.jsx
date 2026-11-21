@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import ShipmentMap from '../../components/ShipmentMap.jsx';
 import { DEFAULT_SPEEDS, formatKm } from '../../lib/tracking.js';
 import { useResource } from '../api.js';
-import { addEvent, createShipment, deleteEvent, deleteShipment, getSettings, getShipment, listEmailLog, updateShipment } from '../data.js';
+import { addEvent, createShipment, deleteEvent, deleteShipment, getSettings, getShipment, listEmailLog, resendFailedEmails, updateShipment } from '../data.js';
 import { normaliseInvoice } from '../invoice.js';
 import { locateRoute } from '../route.js';
 import { generateTrackingId } from '../../lib/trackingId.js';
@@ -600,29 +600,69 @@ export default function ShipmentForm() {
 /* Emails sent automatically to the sender and receiver (see supabase/functions/notify-shipment). */
 function EmailLog({ shipmentId, status }) {
   const [rows, setRows] = useState(null);
+  const [resending, setResending] = useState(false);
+  const [notice, setNotice] = useState(null);
+
+  const load = () => listEmailLog(shipmentId).then(setRows).catch(() => setRows([]));
 
   useEffect(() => {
     let active = true;
-    const load = () =>
+    const refresh = () =>
       listEmailLog(shipmentId)
         .then((r) => active && setRows(r))
         .catch(() => active && setRows([]));
-    load();
+    refresh();
     // emails go out a few seconds after a change: check again shortly
-    const timer = setTimeout(load, 9000);
+    const timer = setTimeout(refresh, 9000);
     return () => {
       active = false;
       clearTimeout(timer);
     };
   }, [shipmentId, status]);
 
+  // the newest entry per address decides whether that person still needs an email
+  const latestByRecipient = new Map();
+  for (const r of rows || []) {
+    const key = r.recipient.toLowerCase();
+    if (!latestByRecipient.has(key)) latestByRecipient.set(key, r);
+  }
+  const pending = [...latestByRecipient.values()].filter((r) => !r.ok).length;
+
+  const resend = async () => {
+    setResending(true);
+    setNotice(null);
+    try {
+      const res = await resendFailedEmails(shipmentId);
+      if (res?.sent && !res.failed) setNotice({ ok: true, text: `Sent ${res.sent} email${res.sent > 1 ? 's' : ''}.` });
+      else if (res?.sent) setNotice({ ok: false, text: `Sent ${res.sent}, ${res.failed} still failed: ${res.error || 'unknown error'}` });
+      else if (res?.failed) setNotice({ ok: false, text: `Could not send: ${res.error || 'unknown error'}` });
+      else setNotice({ ok: true, text: 'Nothing to resend.' });
+    } catch (err) {
+      setNotice({ ok: false, text: err.message });
+    } finally {
+      setResending(false);
+      load();
+    }
+  };
+
   return (
     <section className="card">
       <div className="card__head">
         <h2>Email notifications</h2>
-        <span className="muted small">Sender &amp; receiver</span>
+        {pending > 0 ? (
+          <button type="button" className="btn btn--primary btn--sm" onClick={resend} disabled={resending}>
+            {resending ? 'Sending…' : `Resend failed emails (${pending})`}
+          </button>
+        ) : (
+          <span className="muted small">Sender &amp; receiver</span>
+        )}
       </div>
       <div className="card__body">
+        {notice && (
+          <p className="small" role="status" style={{ margin: '0 0 8px', color: notice.ok ? 'var(--ok, #0a7a3d)' : 'var(--bad)' }}>
+            {notice.text}
+          </p>
+        )}
         {rows === null ? (
           <Loading />
         ) : rows.length === 0 ? (

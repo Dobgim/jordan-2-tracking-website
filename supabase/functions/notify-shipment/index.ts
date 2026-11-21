@@ -9,6 +9,10 @@
 //   SMTP_USER              support@thejordanslogistics.com
 //   SMTP_PASS              the mailbox password
 //   SMTP_FROM              optional, defaults to SMTP_USER
+//
+// The dashboard also calls it ("Resend failed emails") with the admin login token
+// and { type: "resend", shipment_id }: each sender/receiver whose last email failed
+// gets one up-to-date email and their failed log entries are cleared.
 import nodemailer from 'npm:nodemailer@6.9.16';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
@@ -85,22 +89,47 @@ function emailHtml(o: {
 </table></td></tr></table></body></html>`;
 }
 
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+const reply = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
+
+/** True when the request carries the login token of a dashboard admin. */
+async function isAdminRequest(req: Request) {
+  const auth = req.headers.get('Authorization') || '';
+  if (!auth.startsWith('Bearer ')) return false;
+  const asUser = createClient(env('SUPABASE_URL'), env('SUPABASE_ANON_KEY'), {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: auth } },
+  });
+  const { data, error } = await asUser.rpc('is_admin');
+  return !error && data === true;
+}
+
 Deno.serve(async (req) => {
-  if (req.headers.get('x-webhook-secret') !== env('NOTIFY_WEBHOOK_SECRET') || !env('NOTIFY_WEBHOOK_SECRET')) {
-    return new Response('forbidden', { status: 403 });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const { type, shipment_id } = await req.json().catch(() => ({}));
-  if (!shipment_id) return new Response('missing shipment', { status: 400 });
+  const secret = env('NOTIFY_WEBHOOK_SECRET');
+  const fromTrigger = !!secret && req.headers.get('x-webhook-secret') === secret;
+  const resend = type === 'resend';
+  if (!(fromTrigger || (resend && (await isAdminRequest(req))))) return reply({ error: 'forbidden' }, 403);
+  if (!shipment_id) return reply({ error: 'missing shipment' }, 400);
 
   // give the dashboard a moment to save the tracking events that go with the change
-  await new Promise((r) => setTimeout(r, 4000));
+  if (!resend) await new Promise((r) => setTimeout(r, 4000));
 
-  const [{ data: s }, { data: co }, { data: ev }] = await Promise.all([
+  const [{ data: s }, { data: co }, { data: ev }, { data: past }] = await Promise.all([
     db.from('shipments').select('*').eq('id', shipment_id).maybeSingle(),
     db.from('settings').select('*').eq('id', 1).maybeSingle(),
     db.from('shipment_events').select('location, note').eq('shipment_id', shipment_id).order('date', { ascending: false }).order('created_at', { ascending: false }).limit(1),
+    resend
+      ? db.from('email_log').select('id, recipient, kind, ok, created_at').eq('shipment_id', shipment_id).order('created_at', { ascending: true })
+      : Promise.resolve({ data: [] as any[] }),
   ]);
-  if (!s) return new Response('shipment not found', { status: 404 });
+  if (!s) return reply({ error: 'shipment not found' }, 404);
   const company = co ?? {};
   const site = String(company.company_website || 'https://thejordanslogistics.com').replace(/\/+$/, '');
   const trackUrl = `${site.startsWith('http') ? site : 'https://' + site}/track?code=${encodeURIComponent(s.tracking_number)}`;
@@ -110,19 +139,35 @@ Deno.serve(async (req) => {
     .map((role) => ({ role, email: String(s[role]?.email || '').trim(), name: String(s[role]?.name || '') }))
     .filter((r) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email));
   // same address for both parties: one email
-  const unique = recipients.filter((r, i) => recipients.findIndex((x) => x.email.toLowerCase() === r.email.toLowerCase()) === i);
+  let unique = recipients.filter((r, i) => recipients.findIndex((x) => x.email.toLowerCase() === r.email.toLowerCase()) === i);
 
-  const created = type === 'created';
-  const subject = created
-    ? `Shipment ${s.tracking_number} created — ${s.origin} to ${s.destination}`
-    : `Shipment ${s.tracking_number} is now ${s.status}`;
+  // Resend: only people whose most recent email failed. Anyone who never received
+  // the "shipment created" email gets that one (it shows the current status too);
+  // everyone else gets an update with the current status.
+  const history = (email: string) => (past ?? []).filter((p: any) => String(p.recipient).toLowerCase() === email.toLowerCase());
+  if (resend) {
+    unique = unique.filter((r) => {
+      const h = history(r.email);
+      return h.length > 0 && !h[h.length - 1].ok;
+    });
+    if (!unique.length) return reply({ sent: 0, failed: 0, reason: 'nothing to resend' });
+  }
+  const kindFor = (email: string): 'created' | 'status' => {
+    if (!resend) return type === 'created' ? 'created' : 'status';
+    return history(email).some((p: any) => p.kind === 'created' && p.ok) ? 'status' : 'created';
+  };
+  const subjectFor = (kind: string) =>
+    kind === 'created'
+      ? `Shipment ${s.tracking_number} created — ${s.origin} to ${s.destination}`
+      : `Shipment ${s.tracking_number} is now ${s.status}`;
 
-  const log = (to: string, ok: boolean, error = '') =>
-    db.from('email_log').insert({ shipment_id, recipient: to, subject, kind: created ? 'created' : 'status', ok, error: error.slice(0, 500) });
+  const log = (to: string, kind: string, ok: boolean, error = '') =>
+    db.from('email_log').insert({ shipment_id, recipient: to, subject: subjectFor(kind), kind, ok, error: error.slice(0, 500) });
 
   if (!env('SMTP_HOST') || !env('SMTP_USER') || !env('SMTP_PASS')) {
-    await Promise.all(unique.map((r) => log(r.email, false, 'Email is not configured yet (SMTP secrets missing).')));
-    return Response.json({ sent: 0, reason: 'smtp not configured' });
+    const reason = 'Email is not configured yet (SMTP secrets missing).';
+    if (!resend) await Promise.all(unique.map((r) => log(r.email, kindFor(r.email), false, reason)));
+    return reply({ sent: 0, failed: unique.length, error: reason });
   }
 
   const port = Number(env('SMTP_PORT') || 465);
@@ -135,7 +180,11 @@ Deno.serve(async (req) => {
   const from = `"${String(company.company_name || 'TheJordans Logistics').replace(/"/g, '')}" <${env('SMTP_FROM') || env('SMTP_USER')}>`;
 
   let sent = 0;
+  let lastError = '';
   for (const r of unique) {
+    const kind = kindFor(r.email);
+    const created = kind === 'created';
+    const subject = subjectFor(kind);
     const intro = created
       ? `A new shipment ${r.role === 'sender' ? 'you are sending' : 'addressed to you'} has been created. Your tracking number is <strong>${esc(s.tracking_number)}</strong>.`
       : `Your shipment <strong>${esc(s.tracking_number)}</strong> ${esc(STATUS_TEXT[s.status] || `is now ${s.status}.`)}`;
@@ -149,10 +198,17 @@ Deno.serve(async (req) => {
         text: `${subject}\n\nTrack it live: ${trackUrl}`,
       });
       sent++;
-      await log(r.email, true);
+      if (resend) {
+        // the earlier failed attempts are covered by this email
+        const failedIds = history(r.email).filter((p: any) => !p.ok).map((p: any) => p.id);
+        if (failedIds.length) await db.from('email_log').delete().in('id', failedIds);
+      }
+      await log(r.email, kind, true);
     } catch (err) {
-      await log(r.email, false, String((err as Error)?.message || err));
+      lastError = String((err as Error)?.message || err);
+      // a failed resend leaves the existing failed entries in place
+      if (!resend) await log(r.email, kind, false, lastError);
     }
   }
-  return Response.json({ sent });
+  return reply({ sent, failed: unique.length - sent, error: lastError || undefined });
 });
