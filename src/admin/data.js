@@ -54,7 +54,15 @@ export const fromRow = (r) => ({
   createdAt: r.created_at,
   updatedAt: r.updated_at,
   events: (r.shipment_events || [])
-    .map((e) => ({ id: e.id, date: e.date, status: e.status, location: e.location, note: e.note, createdAt: e.created_at }))
+    .map((e) => ({
+      id: e.id,
+      date: e.date,
+      status: e.status,
+      location: e.location,
+      note: e.note,
+      createdAt: e.created_at,
+      hasPhoto: Array.isArray(e.event_photos) ? e.event_photos.length > 0 : !!e.event_photos,
+    }))
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
 });
 
@@ -91,7 +99,7 @@ export async function listShipments() {
 }
 
 export async function getShipment(id) {
-  return fromRow(must(await supabase.from('shipments').select('*, shipment_events(*)').eq('id', id).single()));
+  return fromRow(must(await supabase.from('shipments').select('*, shipment_events(*, event_photos(event_id))').eq('id', id).single()));
 }
 
 export async function createShipment(s) {
@@ -109,16 +117,62 @@ export async function deleteShipment(id) {
 }
 
 export async function addEvent(shipmentId, event) {
-  must(
-    await supabase.from('shipment_events').insert({
-      shipment_id: shipmentId,
-      status: event.status,
-      location: event.location || '',
-      note: event.note || '',
-      date: event.date,
-    })
+  const row = must(
+    await supabase
+      .from('shipment_events')
+      .insert({
+        shipment_id: shipmentId,
+        status: event.status,
+        location: event.location || '',
+        note: event.note || '',
+        date: event.date,
+      })
+      .select('id')
+      .single()
   );
+  if (event.photo) must(await supabase.from('event_photos').upsert({ event_id: row.id, data: event.photo }));
   return getShipment(shipmentId);
+}
+
+/* ---------------- delivery photos (one per tracking update) ---------------- */
+export async function setEventPhoto(shipmentId, eventId, dataUrl) {
+  must(await supabase.from('event_photos').upsert({ event_id: eventId, data: dataUrl }));
+  return getShipment(shipmentId);
+}
+
+export async function removeEventPhoto(shipmentId, eventId) {
+  must(await supabase.from('event_photos').delete().eq('event_id', eventId));
+  return getShipment(shipmentId);
+}
+
+export async function getEventPhoto(eventId) {
+  return must(await supabase.from('event_photos').select('data').eq('event_id', eventId).single()).data;
+}
+
+/** Shrinks a picked image to a JPEG data URL (max 1600px) so it stores and loads fast. */
+export function imageToDataUrl(file, maxSide = 1600, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) return reject(new Error('Please choose an image file (JPG, PNG, HEIC…).'));
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('This image could not be read. Try a JPG or PNG photo.'));
+    };
+    img.src = url;
+  });
 }
 
 export async function deleteEvent(shipmentId, eventId) {
@@ -127,7 +181,7 @@ export async function deleteEvent(shipmentId, eventId) {
 }
 
 /* ---------------- overview ---------------- */
-const STATUSES = ['Pending', 'Picked Up', 'In Transit', 'Out for Delivery', 'Delivered', 'On Hold', 'Cancelled'];
+const STATUSES = ['Label Created', 'Facility Received', 'In Transit', 'Out for Delivery', 'Delivered', 'On Hold', 'Cancelled'];
 
 export async function getStats() {
   const [shipments, quotes, subscribers] = await Promise.all([
@@ -144,7 +198,7 @@ export async function getStats() {
   return {
     totals: {
       shipments: ships.length,
-      active: byStatus['Picked Up'] + byStatus['In Transit'] + byStatus['Out for Delivery'],
+      active: byStatus['Facility Received'] + byStatus['In Transit'] + byStatus['Out for Delivery'],
       delivered: byStatus.Delivered,
       quotes: qs.length,
       newQuotes: qs.filter((q) => q.status === 'new').length,

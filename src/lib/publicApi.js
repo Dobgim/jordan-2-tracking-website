@@ -27,6 +27,10 @@ async function rpc(fn, args) {
 /** Shipment for a tracking number, or null when unknown. */
 export const trackShipment = (code) => rpc('track_shipment', { p_code: code });
 
+/** { photo } on success, or { error: 'wrong_postal' | 'too_many' | 'no_postal' | 'no_photo' | 'not_found' }. */
+export const getDeliveryPhoto = (code, eventId, postal) =>
+  rpc('delivery_photo', { p_code: code, p_event_id: eventId, p_postal: postal });
+
 export const submitQuote = (quote) => rpc('submit_quote', { p: quote });
 
 /** Resolves to 'subscribed' or 'exists'. */

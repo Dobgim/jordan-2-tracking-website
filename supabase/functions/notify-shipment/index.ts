@@ -23,8 +23,8 @@ const esc = (v: unknown) =>
   String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 const STATUS_TEXT: Record<string, string> = {
-  Pending: 'has been registered and is waiting to be picked up.',
-  'Picked Up': 'has been picked up and is being prepared for departure.',
+  'Label Created': 'has a shipping label and is waiting to be handed over to us.',
+  'Facility Received': 'has arrived at our facility and is being prepared for departure.',
   'In Transit': 'is on its way to the destination.',
   'Out for Delivery': 'is out for delivery and will arrive soon.',
   Delivered: 'has been delivered.',

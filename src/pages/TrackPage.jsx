@@ -5,7 +5,7 @@ import ShipmentMap from '../components/ShipmentMap.jsx';
 import ShipmentInvoice from '../components/ShipmentInvoice.jsx';
 import { Stripes } from '../components/ui.jsx';
 import { company } from '../data/site.jsx';
-import { getPublicSettings, trackShipment } from '../lib/publicApi.js';
+import { getDeliveryPhoto, getPublicSettings, trackShipment } from '../lib/publicApi.js';
 
 /*
  * /track — every "Tracking" / "Track And Trace" link, the tracking boxes on
@@ -13,11 +13,11 @@ import { getPublicSettings, trackShipment } from '../lib/publicApi.js';
  */
 
 const REFRESH_MS = 30000;
-const STEPS = ['Pending', 'Picked Up', 'In Transit', 'Out for Delivery', 'Delivered'];
+const STEPS = ['Label Created', 'Facility Received', 'In Transit', 'Out for Delivery', 'Delivered'];
 
 const STATUS_STYLES = {
-  pending: 'bg-slate-100 text-slate-700',
-  'picked-up': 'bg-sky-100 text-sky-800',
+  'label-created': 'bg-slate-100 text-slate-700',
+  'facility-received': 'bg-sky-100 text-sky-800',
   'in-transit': 'bg-blue-100 text-royal',
   'out-for-delivery': 'bg-amber-100 text-amber-800',
   delivered: 'bg-emerald-100 text-emerald-800',
@@ -48,9 +48,137 @@ function Spinner() {
   return <span className="inline-block size-5 animate-spin rounded-full border-2 border-line border-t-brand" aria-hidden="true" />;
 }
 
+const PHOTO_ERRORS = {
+  wrong_postal: 'That postal code does not match this shipment. Please check it and try again.',
+  too_many: 'Too many attempts. Please wait 15 minutes and try again, or contact support.',
+  no_postal: 'This photo cannot be unlocked online yet. Please contact support.',
+  no_photo: 'This photo is no longer available.',
+  not_found: 'This shipment could not be found.',
+};
+
+/* Asks for the receiver's postal code, then shows the delivery photo. */
+function DeliveryPhotoDialog({ trackingNumber, event, onClose }) {
+  const [postal, setPostal] = useState('');
+  const [state, setState] = useState({});
+
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!postal.trim()) return;
+    setState({ busy: true });
+    try {
+      const res = await getDeliveryPhoto(trackingNumber, event.id, postal.trim());
+      setState(res?.photo ? { photo: res.photo } : { error: PHOTO_ERRORS[res?.error] || 'Something went wrong. Please try again.' });
+    } catch (err) {
+      setState({ error: err.message });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-navy/70 p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Delivery confirmation"
+        onClick={(e) => e.stopPropagation()}
+        className={`relative w-full overflow-hidden rounded-2xl bg-white shadow-2xl ${state.photo ? 'max-w-[760px]' : 'max-w-[420px]'}`}
+      >
+        <button type="button" onClick={onClose} aria-label="Close" className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-full bg-white/90 text-navy hover:bg-mist">
+          <Icon name="close" size={18} />
+        </button>
+        {state.photo ? (
+          <div className="p-4 sm:p-6">
+            <strong className="block pr-10 font-heading text-[18px] text-navy">Delivery confirmation</strong>
+            <span className="text-[14px]">
+              {event.status} · {formatDate(event.date, true)}
+            </span>
+            <img src={state.photo} alt="Delivery confirmation photo" className="mt-4 max-h-[70vh] w-full rounded-xl object-contain bg-mist" />
+            <a
+              href={state.photo}
+              download={`delivery-${trackingNumber}.jpg`}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-navy px-4 py-2.5 font-heading text-[14px] font-semibold text-white hover:bg-brand"
+            >
+              <Icon name="arrowDown" size={16} /> Download photo
+            </a>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="p-6 sm:p-8">
+            <span className="grid size-12 place-items-center rounded-full bg-orange-50 text-[#F7931E]">
+              <Icon name="lock" size={22} />
+            </span>
+            <strong className="mt-4 block font-heading text-[20px] text-navy">View delivery confirmation</strong>
+            <p className="mt-1 text-[15px]">For privacy, enter the receiver&apos;s postal code to view the delivery photo.</p>
+            <input
+              value={postal}
+              onChange={(e) => setPostal(e.target.value)}
+              placeholder="Receiver's postal code"
+              aria-label="Receiver's postal code"
+              autoComplete="postal-code"
+              autoFocus
+              className="mt-5 h-12 w-full rounded-lg border border-line px-4 text-[16px] text-navy outline-none focus:border-navy"
+            />
+            {state.error && <p className="mt-3 text-[14px] text-red-700">{state.error}</p>}
+            <button
+              type="submit"
+              disabled={!postal.trim() || state.busy}
+              className="mt-4 h-12 w-full rounded-lg bg-brand font-heading text-[15px] font-semibold text-white transition-colors hover:bg-navy disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {state.busy ? 'Checking…' : 'View photo'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* "Need help?" box with the support email and phone number. */
+function ContactSupport({ settings }) {
+  const email = settings?.companyEmail || company.supportEmail;
+  const phone = settings?.companyPhone || company.supportPhone;
+  const tel = 'tel:' + String(phone).replace(/[^\d+]/g, '');
+  return (
+    <div className="mt-8 rounded-xl border border-line bg-mist p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-navy text-white">
+            <Icon name="headset" size={20} />
+          </span>
+          <div>
+            <strong className="block font-heading text-[17px] text-navy">Need help with this shipment?</strong>
+            <span className="block text-[14px]">Our support team is here for you.</span>
+          </div>
+        </div>
+        <a
+          href={`mailto:${email}`}
+          className="inline-flex h-11 items-center gap-2 rounded-lg bg-brand px-5 font-heading text-[14px] font-semibold text-white transition-colors hover:bg-navy"
+        >
+          <Icon name="headset" size={17} /> Contact Support
+        </a>
+      </div>
+      <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+        <a href={`mailto:${email}`} className="flex min-w-0 items-center gap-3 rounded-lg bg-white px-4 py-3 text-navy hover:text-brand">
+          <Icon name="mail" size={18} className="shrink-0 text-brand" />
+          <span className="truncate text-[15px] font-medium">{email}</span>
+        </a>
+        <a href={tel} className="flex items-center gap-3 rounded-lg bg-white px-4 py-3 text-navy hover:text-brand">
+          <Icon name="phone" size={18} className="shrink-0 text-brand" />
+          <span className="text-[15px] font-medium">{phone}</span>
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function ShipmentResult({ shipment, mapsKey, clockOffset, settings }) {
+  const [photoEvent, setPhotoEvent] = useState(null);
   const lastRegular = shipment.events.find((e) => STEPS.includes(e.status))?.status;
-  const currentStep = STEPS.indexOf(STEPS.includes(shipment.status) ? shipment.status : lastRegular || 'Pending');
+  const currentStep = STEPS.indexOf(STEPS.includes(shipment.status) ? shipment.status : lastRegular || 'Label Created');
   const exception = !STEPS.includes(shipment.status);
   const statusKey = shipment.status.toLowerCase().replace(/\s+/g, '-');
 
@@ -122,6 +250,8 @@ function ShipmentResult({ shipment, mapsKey, clockOffset, settings }) {
         })}
       </ol>
 
+      <ContactSupport settings={settings} />
+
       {(shipment.freightType || shipment.weight || shipment.service || shipment.pieceType) && (
         <dl className="mt-9 grid gap-3 sm:grid-cols-3">
           {[
@@ -154,9 +284,20 @@ function ShipmentResult({ shipment, mapsKey, clockOffset, settings }) {
               <span className="text-[13px]">{formatDate(ev.date, true)}</span>
             </div>
             {(ev.location || ev.note) && <p className="mt-1 text-[15px]">{[ev.location, ev.note].filter(Boolean).join(' — ')}</p>}
+            {ev.hasPhoto && ev.id && (
+              <button
+                type="button"
+                onClick={() => setPhotoEvent(ev)}
+                className="mt-2.5 inline-flex items-center gap-3 font-heading text-[15px] font-semibold text-[#F7931E] hover:text-brand"
+              >
+                <Icon name="image" size={24} strokeWidth={1.5} />
+                View Delivery Confirmation
+              </button>
+            )}
           </li>
         ))}
       </ol>
+      {photoEvent && <DeliveryPhotoDialog trackingNumber={shipment.trackingNumber} event={photoEvent} onClose={() => setPhotoEvent(null)} />}
 
       <h3 id="invoice" className="mt-12 text-[20px] font-semibold">Invoice</h3>
       <p className="mt-1 mb-5 text-[15px]">Your shipment invoice, with a QR code that opens this tracking page. Download it as a PDF to keep or share.</p>

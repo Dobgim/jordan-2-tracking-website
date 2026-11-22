@@ -3,7 +3,21 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import ShipmentMap from '../../components/ShipmentMap.jsx';
 import { DEFAULT_SPEEDS, formatKm } from '../../lib/tracking.js';
 import { useResource } from '../api.js';
-import { addEvent, createShipment, deleteEvent, deleteShipment, getSettings, getShipment, listEmailLog, resendFailedEmails, updateShipment } from '../data.js';
+import {
+  addEvent,
+  createShipment,
+  deleteEvent,
+  deleteShipment,
+  getEventPhoto,
+  getSettings,
+  getShipment,
+  imageToDataUrl,
+  listEmailLog,
+  removeEventPhoto,
+  resendFailedEmails,
+  setEventPhoto,
+  updateShipment,
+} from '../data.js';
 import { normaliseInvoice } from '../invoice.js';
 import { locateRoute } from '../route.js';
 import { generateTrackingId } from '../../lib/trackingId.js';
@@ -20,7 +34,7 @@ const toLocalInput = (iso) => {
 };
 const fromLocalInput = (value) => (value ? new Date(value).toISOString() : null);
 const trackUrlFor = (code) => `${window.location.origin}/track?code=${encodeURIComponent(code)}`;
-const blankEvent = () => ({ status: 'Pending', date: toLocalInput(new Date().toISOString()), location: '', note: '' });
+const blankEvent = () => ({ status: 'Label Created', date: toLocalInput(new Date().toISOString()), location: '', note: '' });
 const dateIn = (days) => new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
 
 const blankInvoice = (settings) => ({
@@ -36,7 +50,7 @@ const blankInvoice = (settings) => ({
 
 const EMPTY = {
   trackingNumber: '',
-  status: 'Pending',
+  status: 'Label Created',
   origin: '',
   destination: '',
   freightType: 'Truck Freight',
@@ -51,7 +65,7 @@ const EMPTY = {
   speedKmh: DEFAULT_SPEEDS['Truck Freight'],
   notes: '',
   sender: { name: '', phone: '', email: '', address: '' },
-  receiver: { name: '', phone: '', email: '', address: '' },
+  receiver: { name: '', phone: '', email: '', address: '', postalCode: '' },
   invoice: null, // filled from Settings once they load
 };
 
@@ -489,6 +503,11 @@ export default function ShipmentForm() {
                   <span>Delivery address</span>
                   <input value={form.receiver.address} onChange={setParty('receiver', 'address')} />
                 </label>
+                <label className="field">
+                  <span>Postal code</span>
+                  <input value={form.receiver.postalCode} onChange={setParty('receiver', 'postalCode')} autoComplete="off" />
+                  <small className="form-note">Customers enter this code to view delivery photos.</small>
+                </label>
               </div>
             </section>
           </div>
@@ -736,9 +755,58 @@ function TrackingCode({ shipment }) {
 const localNow = () => toLocalInput(new Date().toISOString());
 
 function TrackingHistory({ shipment, onChange }) {
-  const [draft, setDraft] = useState(() => ({ status: shipment.status, location: '', note: '', date: localNow() }));
+  const [draft, setDraft] = useState(() => ({ status: shipment.status, location: '', note: '', date: localNow(), photo: '' }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [photoBusy, setPhotoBusy] = useState(null); // id of the update whose photo is changing
+  const [viewing, setViewing] = useState(null); // { src } or { loading: true }
+
+  const pickDraftPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const photo = await imageToDataUrl(file);
+      setDraft((d) => ({ ...d, photo }));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const attachPhoto = async (event, file) => {
+    if (!file) return;
+    setPhotoBusy(event.id);
+    setError('');
+    try {
+      onChange(await setEventPhoto(shipment.id, event.id, await imageToDataUrl(file)));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPhotoBusy(null);
+    }
+  };
+
+  const detachPhoto = async (event) => {
+    if (!window.confirm('Remove the photo from this update?')) return;
+    setPhotoBusy(event.id);
+    try {
+      onChange(await removeEventPhoto(shipment.id, event.id));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPhotoBusy(null);
+    }
+  };
+
+  const viewPhoto = async (event) => {
+    setViewing({ loading: true });
+    try {
+      setViewing({ src: await getEventPhoto(event.id) });
+    } catch (err) {
+      setViewing(null);
+      setError(err.message);
+    }
+  };
 
   const set = (key) => (e) => setDraft((d) => ({ ...d, [key]: e.target.value }));
 
@@ -749,7 +817,7 @@ function TrackingHistory({ shipment, onChange }) {
     try {
       const updated = await addEvent(shipment.id, { ...draft, date: fromLocalInput(draft.date) || new Date().toISOString() });
       onChange(updated);
-      setDraft({ status: updated.status, location: '', note: '', date: localNow() });
+      setDraft({ status: updated.status, location: '', note: '', date: localNow(), photo: '' });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -796,6 +864,24 @@ function TrackingHistory({ shipment, onChange }) {
             <span>Note for the customer</span>
             <input value={draft.note} onChange={set('note')} placeholder="e.g. Departed regional hub" />
           </label>
+          <div className="field">
+            <span>Delivery photo (optional)</span>
+            {draft.photo ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <img src={draft.photo} alt="Selected delivery photo" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8 }} />
+                <button type="button" className="btn btn--danger-ghost btn--sm" onClick={() => setDraft((d) => ({ ...d, photo: '' }))}>
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <label className="btn btn--ghost btn--sm" style={{ alignSelf: 'flex-start', cursor: 'pointer' }}>
+                <Icon name="image" size={16} />
+                Add photo
+                <input type="file" accept="image/*" onChange={pickDraftPhoto} hidden />
+              </label>
+            )}
+            <small className="form-note">Customers can view it on the tracking page after entering the receiver&apos;s postal code.</small>
+          </div>
           <button type="submit" className="btn btn--dark" disabled={busy}>
             <Icon name="plus" size={16} />
             {busy ? 'Posting…' : 'Post update'}
@@ -823,6 +909,25 @@ function TrackingHistory({ shipment, onChange }) {
                   </div>
                   {(ev.location || ev.note) && <p className="timeline__text">{[ev.location, ev.note].filter(Boolean).join(' — ')}</p>}
                   <span className="muted small">{formatDate(ev.date, true)}</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                    {ev.hasPhoto ? (
+                      <>
+                        <button type="button" className="btn btn--ghost btn--sm" onClick={() => viewPhoto(ev)}>
+                          <Icon name="image" size={14} />
+                          View photo
+                        </button>
+                        <button type="button" className="btn btn--danger-ghost btn--sm" onClick={() => detachPhoto(ev)} disabled={photoBusy === ev.id}>
+                          Remove photo
+                        </button>
+                      </>
+                    ) : (
+                      <label className="btn btn--ghost btn--sm" style={{ cursor: 'pointer' }}>
+                        <Icon name="image" size={14} />
+                        {photoBusy === ev.id ? 'Uploading…' : 'Add photo'}
+                        <input type="file" accept="image/*" hidden disabled={photoBusy === ev.id} onChange={(e) => attachPhoto(ev, e.target.files?.[0])} />
+                      </label>
+                    )}
+                  </div>
                 </li>
               ))}
             </ol>
@@ -831,6 +936,21 @@ function TrackingHistory({ shipment, onChange }) {
           )}
         </div>
       </section>
+
+      {viewing && (
+        <div
+          role="dialog"
+          aria-label="Delivery photo"
+          onClick={() => setViewing(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgb(10 14 40 / 0.8)', display: 'grid', placeItems: 'center', padding: 16 }}
+        >
+          {viewing.loading ? (
+            <Loading label="Loading photo…" />
+          ) : (
+            <img src={viewing.src} alt="Delivery photo" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: 10 }} />
+          )}
+        </div>
+      )}
     </>
   );
 }

@@ -1,13 +1,13 @@
 /* Shared building blocks for the admin screens. */
 
-export const STATUSES = ['Pending', 'Picked Up', 'In Transit', 'Out for Delivery', 'Delivered', 'On Hold', 'Cancelled'];
+export const STATUSES = ['Label Created', 'Facility Received', 'In Transit', 'Out for Delivery', 'Delivered', 'On Hold', 'Cancelled'];
 export const FREIGHT_TYPES = ['Truck Freight', 'Ship Freight', 'Train Freight', 'Plane Freight'];
 export const SERVICES = ['Fragile', 'Express', 'Insurance', 'Packaging'];
 export const QUOTE_STATUSES = ['new', 'contacted', 'closed'];
 
 const STATUS_TONE = {
-  Pending: 'neutral',
-  'Picked Up': 'info',
+  'Label Created': 'neutral',
+  'Facility Received': 'info',
   'In Transit': 'info',
   'Out for Delivery': 'warn',
   Delivered: 'ok',
@@ -192,6 +192,13 @@ const ICONS = {
     <>
       <rect x="4" y="11" width="16" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="2" />
+      <path d="M21 16l-5-5-9 9" />
     </>
   ),
 };
