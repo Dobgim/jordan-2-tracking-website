@@ -38,6 +38,7 @@ export function movementState(s, covered, totalKm, nowMs) {
   if (s.status === 'Delivered') return { key: 'delivered', label: 'Delivered' };
   if (s.status === 'Cancelled') return { key: 'stopped', label: 'Cancelled — stopped' };
   if (s.status === 'On Hold') return { key: 'paused', label: 'On hold — position held' };
+  if (s.status === 'Delayed') return { key: 'paused', label: 'Delayed — position held' };
   if (isMoving(s.status)) {
     const departs = Date.parse(s.progressAt);
     if (departs > nowMs) return { key: 'waiting', label: `Departs ${formatWhen(departs)}` };

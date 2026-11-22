@@ -21,6 +21,7 @@ const STATUS_STYLES = {
   'in-transit': 'bg-blue-100 text-royal',
   'out-for-delivery': 'bg-amber-100 text-amber-800',
   delivered: 'bg-emerald-100 text-emerald-800',
+  delayed: 'bg-amber-100 text-amber-800',
   'on-hold': 'bg-orange-100 text-orange-800',
   cancelled: 'bg-red-100 text-red-700',
 };

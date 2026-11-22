@@ -1,6 +1,6 @@
 /* Shared building blocks for the admin screens. */
 
-export const STATUSES = ['Label Created', 'Facility Received', 'In Transit', 'Out for Delivery', 'Delivered', 'On Hold', 'Cancelled'];
+export const STATUSES = ['Label Created', 'Facility Received', 'Delayed', 'In Transit', 'Out for Delivery', 'Delivered', 'On Hold', 'Cancelled'];
 export const FREIGHT_TYPES = ['Truck Freight', 'Ship Freight', 'Train Freight', 'Plane Freight'];
 export const SERVICES = ['Fragile', 'Express', 'Insurance', 'Packaging'];
 export const QUOTE_STATUSES = ['new', 'contacted', 'closed'];
@@ -11,6 +11,7 @@ const STATUS_TONE = {
   'In Transit': 'info',
   'Out for Delivery': 'warn',
   Delivered: 'ok',
+  Delayed: 'warn',
   'On Hold': 'warn',
   Cancelled: 'bad',
 };

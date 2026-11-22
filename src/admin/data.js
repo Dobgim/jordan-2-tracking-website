@@ -181,7 +181,7 @@ export async function deleteEvent(shipmentId, eventId) {
 }
 
 /* ---------------- overview ---------------- */
-const STATUSES = ['Label Created', 'Facility Received', 'In Transit', 'Out for Delivery', 'Delivered', 'On Hold', 'Cancelled'];
+const STATUSES = ['Label Created', 'Facility Received', 'Delayed', 'In Transit', 'Out for Delivery', 'Delivered', 'On Hold', 'Cancelled'];
 
 export async function getStats() {
   const [shipments, quotes, subscribers] = await Promise.all([

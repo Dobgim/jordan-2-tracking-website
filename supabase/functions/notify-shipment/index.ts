@@ -28,6 +28,7 @@ const STATUS_TEXT: Record<string, string> = {
   'In Transit': 'is on its way to the destination.',
   'Out for Delivery': 'is out for delivery and will arrive soon.',
   Delivered: 'has been delivered.',
+  Delayed: 'is delayed. We are working to get it moving again and will update you shortly.',
   'On Hold': 'is temporarily on hold. Our team will update you shortly.',
   Cancelled: 'has been cancelled. Contact us if you have any questions.',
 };
