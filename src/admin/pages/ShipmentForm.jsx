@@ -897,6 +897,12 @@ function TrackingHistory({ shipment, onChange }) {
           </span>
         </div>
         <div className="card__body">
+          {shipment.events.some((ev) => ev.hasPhoto) && !String(shipment.receiver?.postalCode || '').trim() && (
+            <p className="small" style={{ margin: '0 0 12px', padding: '10px 12px', borderRadius: 8, background: 'var(--bad-bg)', color: 'var(--bad)' }}>
+              No postal code is saved for the receiver. Customers can only unlock the delivery photo with a postal code that is
+              written in the delivery address. To be sure, fill in Receiver → Postal code and save.
+            </p>
+          )}
           {shipment.events.length ? (
             <ol className="timeline">
               {shipment.events.map((ev) => (
