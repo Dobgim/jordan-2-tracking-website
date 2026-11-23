@@ -31,6 +31,19 @@ export const trackShipment = (code) => rpc('track_shipment', { p_code: code });
 export const getDeliveryPhoto = (code, eventId, postal) =>
   rpc('delivery_photo', { p_code: code, p_event_id: eventId, p_postal: postal });
 
+/** Saves the receiver's delivery instruction and returns the saved values or an error code. */
+export async function saveDeliveryInstruction(code, instruction, note = '') {
+  const data = await rpc('save_delivery_instruction', { p_code: code, p_instruction: instruction, p_note: note });
+  const messages = {
+    not_found: 'This shipment could not be found.',
+    shipment_closed: 'Delivery instructions can no longer be changed for this shipment.',
+    invalid_instruction: 'Please select a valid delivery instruction.',
+    invalid_note: 'Please add delivery details (up to 500 characters) for Other.',
+  };
+  if (data?.error) throw new Error(messages[data.error] || 'Could not save delivery instructions. Please try again.');
+  return data;
+}
+
 export const submitQuote = (quote) => rpc('submit_quote', { p: quote });
 
 /** Resolves to 'subscribed' or 'exists'. */

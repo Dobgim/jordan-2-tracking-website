@@ -61,6 +61,7 @@ const EMPTY = {
   estimatedDeliveryTime: '',
   pieceType: '',
   packageDescription: '',
+  amountDue: '',
   departureAt: '',
   speedKmh: DEFAULT_SPEEDS['Truck Freight'],
   notes: '',
@@ -82,6 +83,7 @@ const toForm = (s) => ({
   estimatedDeliveryTime: s.estimatedDeliveryTime || '',
   pieceType: s.pieceType || '',
   packageDescription: s.packageDescription || '',
+  amountDue: s.amountDue ?? '',
   departureAt: toLocalInput(s.departureAt),
   speedKmh: s.speedKmh ?? DEFAULT_SPEEDS[s.freightType] ?? 60,
   notes: s.notes || '',
@@ -221,6 +223,7 @@ export default function ShipmentForm() {
         ...route,
         departureAt: fromLocalInput(form.departureAt),
         speedKmh: Number(form.speedKmh) || DEFAULT_SPEEDS[form.freightType] || 60,
+        amountDue: form.amountDue === '' ? null : Number(form.amountDue),
         invoice: normaliseInvoice(invoiceOf(form)),
       };
 
@@ -414,6 +417,11 @@ export default function ShipmentForm() {
                 <span>Package description</span>
                 <textarea value={form.packageDescription} onChange={set('packageDescription')} placeholder="Describe the package contents" />
               </label>
+              <label className="field">
+                <span>Amount due for clearance</span>
+                <input type="number" min="0" step="0.01" value={form.amountDue} onChange={set('amountDue')} placeholder="e.g. 255.00" />
+                <small className="form-note">Shown on the tracking page while the shipment is On Hold. Currency: {settings?.currency || 'USD'}.</small>
+              </label>
             </div>
           </section>
 
@@ -508,6 +516,12 @@ export default function ShipmentForm() {
                   <input value={form.receiver.postalCode} onChange={setParty('receiver', 'postalCode')} autoComplete="off" />
                   <small className="form-note">Customers enter this code to view delivery photos.</small>
                 </label>
+                {!isNew && (
+                  <p className="form-note">
+                    Current delivery instruction: <strong>{shipment.deliveryInstruction || 'None selected'}</strong>
+                    {shipment.deliveryInstructionNote ? ` — ${shipment.deliveryInstructionNote}` : ''}
+                  </p>
+                )}
               </div>
             </section>
           </div>

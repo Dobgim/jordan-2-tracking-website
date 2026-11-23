@@ -43,6 +43,9 @@ export const fromRow = (r) => ({
   estimatedDeliveryTime: r.estimated_delivery_time || '',
   pieceType: r.piece_type || '',
   packageDescription: r.package_description || '',
+  amountDue: numOrNull(r.amount_due),
+  deliveryInstruction: r.delivery_instruction || '',
+  deliveryInstructionNote: r.delivery_instruction_note || '',
   departureAt: r.departure_at,
   speedKmh: numOrNull(r.speed_kmh),
   progressKm: numOrNull(r.progress_km),
@@ -87,6 +90,7 @@ const toRow = (s) => ({
   estimated_delivery_time: s.estimatedDeliveryTime || '',
   piece_type: s.pieceType || '',
   package_description: (s.packageDescription || '').trim(),
+  amount_due: numOrNull(s.amountDue),
   speed_kmh: numOrNull(s.speedKmh) || 60,
   sender: s.sender || {},
   receiver: s.receiver || {},
@@ -304,7 +308,7 @@ export async function changePassword(email, currentPassword, newPassword) {
 export async function listEmailLog(shipmentId) {
   return must(
     await supabase.from('email_log').select('*').eq('shipment_id', shipmentId).order('created_at', { ascending: false }).limit(20)
-  ).map((r) => ({ id: r.id, recipient: r.recipient, subject: r.subject, ok: r.ok, error: r.error, createdAt: r.created_at }));
+  ).map((r) => ({ id: r.id, recipient: r.recipient, subject: r.subject, kind: r.kind, ok: r.ok, error: r.error, createdAt: r.created_at }));
 }
 
 /** Sends one up-to-date email to every sender/receiver whose last email failed. */

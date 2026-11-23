@@ -1,5 +1,6 @@
 // Emails the sender and the receiver when a shipment is created or its status
-// changes. Called by the database trigger in
+// changes, and notifies the company when a receiver saves delivery instructions.
+// Called by the database trigger in
 // supabase/migrations/20261110000400_email_notifications.sql.
 //
 // Secrets (Supabase -> Edge Functions -> Secrets):
@@ -11,8 +12,7 @@
 //   SMTP_FROM              optional, defaults to SMTP_USER
 //
 // The dashboard also calls it ("Resend failed emails") with the admin login token
-// and { type: "resend", shipment_id }: each sender/receiver whose last email failed
-// gets one up-to-date email and their failed log entries are cleared.
+// and { type: "resend", shipment_id } to retry failed shipment and instruction emails.
 import nodemailer from 'npm:nodemailer@6.9.16';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
@@ -145,13 +145,19 @@ Deno.serve(async (req) => {
   // Resend: only people whose most recent email failed. Anyone who never received
   // the "shipment created" email gets that one (it shows the current status too);
   // everyone else gets an update with the current status.
-  const history = (email: string) => (past ?? []).filter((p: any) => String(p.recipient).toLowerCase() === email.toLowerCase());
+  const history = (email: string) =>
+    (past ?? []).filter(
+      (p: any) => String(p.recipient).toLowerCase() === email.toLowerCase() && ['created', 'status'].includes(p.kind)
+    );
+  const instructionHistory = (past ?? []).filter((p: any) => p.kind === 'delivery_instruction');
+  const latestInstruction = instructionHistory[instructionHistory.length - 1];
+  const resendInstruction = resend && !!latestInstruction && !latestInstruction.ok;
   if (resend) {
     unique = unique.filter((r) => {
       const h = history(r.email);
       return h.length > 0 && !h[h.length - 1].ok;
     });
-    if (!unique.length) return reply({ sent: 0, failed: 0, reason: 'nothing to resend' });
+    if (!unique.length && !resendInstruction) return reply({ sent: 0, failed: 0, reason: 'nothing to resend' });
   }
   const kindFor = (email: string): 'created' | 'status' => {
     if (!resend) return type === 'created' ? 'created' : 'status';
@@ -160,15 +166,25 @@ Deno.serve(async (req) => {
   const subjectFor = (kind: string) =>
     kind === 'created'
       ? `Shipment ${s.tracking_number} created — ${s.origin} to ${s.destination}`
-      : `Shipment ${s.tracking_number} is now ${s.status}`;
+      : kind === 'delivery_instruction'
+        ? `Delivery instruction for shipment ${s.tracking_number}`
+        : `Shipment ${s.tracking_number} is now ${s.status}`;
 
   const log = (to: string, kind: string, ok: boolean, error = '') =>
     db.from('email_log').insert({ shipment_id, recipient: to, subject: subjectFor(kind), kind, ok, error: error.slice(0, 500) });
 
+  const instructionRecipient = String(company.company_email || env('SMTP_USER') || 'Company inbox not configured').trim();
   if (!env('SMTP_HOST') || !env('SMTP_USER') || !env('SMTP_PASS')) {
     const reason = 'Email is not configured yet (SMTP secrets missing).';
     if (!resend) await Promise.all(unique.map((r) => log(r.email, kindFor(r.email), false, reason)));
-    return reply({ sent: 0, failed: unique.length, error: reason });
+    if (type === 'delivery_instruction') {
+      await log(instructionRecipient, 'delivery_instruction', false, reason);
+    }
+    return reply({
+      sent: 0,
+      failed: unique.length + (type === 'delivery_instruction' || resendInstruction ? 1 : 0),
+      error: reason,
+    });
   }
 
   const port = Number(env('SMTP_PORT') || 465);
@@ -179,6 +195,41 @@ Deno.serve(async (req) => {
     auth: { user: env('SMTP_USER'), pass: env('SMTP_PASS') },
   });
   const from = `"${String(company.company_name || 'TheJordans Logistics').replace(/"/g, '')}" <${env('SMTP_FROM') || env('SMTP_USER')}>`;
+  const instructionSubject = subjectFor('delivery_instruction');
+  const sendInstructionNotice = async () => {
+    try {
+      await transport.sendMail({
+        from,
+        to: instructionRecipient,
+        replyTo: company.company_email || undefined,
+        subject: instructionSubject,
+        html: `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;color:#11194e">
+          <h2>Delivery instruction received</h2>
+          <p>The receiver selected a delivery instruction for shipment <strong>${esc(s.tracking_number)}</strong>.</p>
+          <p><strong>Instruction:</strong> ${esc(s.delivery_instruction || '—')}</p>
+          ${s.delivery_instruction_note ? `<p><strong>Details:</strong> ${esc(s.delivery_instruction_note)}</p>` : ''}
+          <p><strong>Shipment status:</strong> ${esc(s.status)}</p>
+          <p><a href="${esc(trackUrl)}">View shipment tracking</a></p>
+        </body></html>`,
+        text: `${instructionSubject}\n\nInstruction: ${s.delivery_instruction || '—'}${s.delivery_instruction_note ? `\nDetails: ${s.delivery_instruction_note}` : ''}\n\n${trackUrl}`,
+      });
+      if (resendInstruction) {
+        await db.from('email_log').delete().eq('shipment_id', shipment_id).eq('kind', 'delivery_instruction').eq('ok', false);
+      } else {
+        await log(instructionRecipient, 'delivery_instruction', true);
+      }
+      return true;
+    } catch (err) {
+      const message = String((err as Error)?.message || err);
+      if (!resendInstruction) await log(instructionRecipient, 'delivery_instruction', false, message);
+      return false;
+    }
+  };
+
+  if (type === 'delivery_instruction') {
+    const sent = await sendInstructionNotice();
+    return reply({ sent: sent ? 1 : 0, failed: sent ? 0 : 1 });
+  }
 
   let sent = 0;
   let lastError = '';
@@ -211,5 +262,11 @@ Deno.serve(async (req) => {
       if (!resend) await log(r.email, kind, false, lastError);
     }
   }
-  return reply({ sent, failed: unique.length - sent, error: lastError || undefined });
+  const instructionSent = resendInstruction ? await sendInstructionNotice() : false;
+  if (resendInstruction && !instructionSent) lastError = lastError || 'Could not send the delivery instruction email.';
+  return reply({
+    sent: sent + (instructionSent ? 1 : 0),
+    failed: unique.length - sent + (resendInstruction && !instructionSent ? 1 : 0),
+    error: lastError || undefined,
+  });
 });

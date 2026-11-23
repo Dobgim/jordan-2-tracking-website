@@ -5,7 +5,7 @@ import ShipmentMap from '../components/ShipmentMap.jsx';
 import ShipmentInvoice from '../components/ShipmentInvoice.jsx';
 import { Stripes } from '../components/ui.jsx';
 import { company } from '../data/site.jsx';
-import { getDeliveryPhoto, getPublicSettings, trackShipment } from '../lib/publicApi.js';
+import { getDeliveryPhoto, getPublicSettings, saveDeliveryInstruction, trackShipment } from '../lib/publicApi.js';
 
 /*
  * /track — every "Tracking" / "Track And Trace" link, the tracking boxes on
@@ -176,7 +176,114 @@ function ContactSupport({ settings }) {
   );
 }
 
-function ShipmentResult({ shipment, mapsKey, clockOffset, settings }) {
+function ClearanceNotice({ shipment, settings }) {
+  if (shipment.status !== 'On Hold' || !(Number(shipment.amountDue) > 0)) return null;
+  const currency = shipment.currency || 'USD';
+  let amount;
+  try {
+    amount = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(shipment.amountDue));
+  } catch {
+    amount = `${currency} ${Number(shipment.amountDue).toFixed(2)}`;
+  }
+  const email = settings?.companyEmail || company.supportEmail;
+
+  return (
+    <section className="mt-5 border border-line border-l-[8px] border-l-red-600 bg-[#f7f7f7] p-6 sm:p-8">
+      <h3 className="font-heading text-[22px] font-bold text-navy">Clearance Required</h3>
+      <p className="mt-3 text-[17px] text-body">Outstanding payment required to release this shipment.</p>
+      <p className="mt-2 text-[20px] font-bold text-navy">Amount Due: {amount}</p>
+      <a
+        href={`mailto:${email}?subject=${encodeURIComponent(`Clearance payment for ${shipment.trackingNumber}`)}`}
+        className="mt-5 inline-flex min-h-12 items-center rounded-lg bg-navy px-6 py-3 font-heading text-[16px] font-semibold text-white transition-colors hover:bg-brand"
+      >
+        <Icon name="headset" size={18} className="mr-2" /> Contact Support
+      </a>
+    </section>
+  );
+}
+
+const DELIVERY_INSTRUCTIONS = ['Leave at door', 'Hand it to me', 'Leave with a neighbor', 'Leave at reception', 'Other'];
+
+function DeliveryInstructions({ shipment, onSaved }) {
+  const [instruction, setInstruction] = useState(shipment.deliveryInstruction || '');
+  const [note, setNote] = useState(shipment.deliveryInstructionNote || '');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const closed = ['Delivered', 'Cancelled'].includes(shipment.status);
+
+  useEffect(() => {
+    setInstruction(shipment.deliveryInstruction || '');
+    setNote(shipment.deliveryInstructionNote || '');
+  }, [shipment.deliveryInstruction, shipment.deliveryInstructionNote]);
+
+  const save = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const saved = await saveDeliveryInstruction(shipment.trackingNumber, instruction, note);
+      onSaved(saved);
+      setMessage('Your delivery instructions have been saved.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="mt-9 rounded-xl border border-line bg-white p-5 sm:p-7">
+      <h3 className="font-heading text-[20px] font-semibold text-navy">Delivery Instructions</h3>
+      <p className="mt-3 text-[16px]">
+        Current instruction: <strong>{shipment.deliveryInstruction || 'None selected'}</strong>
+        {shipment.deliveryInstructionNote ? ` — ${shipment.deliveryInstructionNote}` : ''}
+      </p>
+      {!closed && (
+        <form onSubmit={save} className="mt-5 max-w-[560px]">
+          <label className="block text-[14px] font-medium text-body" htmlFor="delivery-instruction">Select Instruction</label>
+          <select
+            id="delivery-instruction"
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+            required
+            className="mt-2 h-12 w-full rounded-lg border border-line bg-white px-4 text-[16px] text-navy outline-none focus:border-navy"
+          >
+            <option value="" disabled>Select an instruction</option>
+            {DELIVERY_INSTRUCTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+          </select>
+          {instruction === 'Other' && (
+            <label className="mt-4 block text-[14px] font-medium text-body" htmlFor="delivery-instruction-note">
+              Delivery details
+              <textarea
+                id="delivery-instruction-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                maxLength={500}
+                required
+                rows={3}
+                className="mt-2 w-full rounded-lg border border-line px-4 py-3 text-[16px] text-navy outline-none focus:border-navy"
+                placeholder="Tell us where or how to leave the package"
+              />
+            </label>
+          )}
+          {error && <p className="mt-3 text-[14px] text-red-700" role="alert">{error}</p>}
+          {message && <p className="mt-3 text-[14px] text-emerald-700" role="status">{message}</p>}
+          <button
+            type="submit"
+            disabled={!instruction || (instruction === 'Other' && !note.trim()) || saving}
+            className="mt-4 min-h-12 rounded-lg bg-navy px-6 py-3 font-heading text-[15px] font-semibold uppercase text-white transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : 'Save Instructions'}
+          </button>
+        </form>
+      )}
+    </section>
+  );
+}
+
+function ShipmentResult({ shipment, mapsKey, clockOffset, settings, onShipmentChange }) {
   const [photoEvent, setPhotoEvent] = useState(null);
   const lastRegular = shipment.events.find((e) => STEPS.includes(e.status))?.status;
   const currentStep = STEPS.indexOf(STEPS.includes(shipment.status) ? shipment.status : lastRegular || 'Label Created');
@@ -205,6 +312,7 @@ function ShipmentResult({ shipment, mapsKey, clockOffset, settings }) {
           This shipment is currently <strong>{shipment.status.toLowerCase()}</strong>. Contact our support team for details.
         </p>
       )}
+      <ClearanceNotice shipment={shipment} settings={settings} />
 
       <div className="mt-6 flex items-center gap-4">
         <div className="min-w-0">
@@ -274,6 +382,11 @@ function ShipmentResult({ shipment, mapsKey, clockOffset, settings }) {
             ))}
         </dl>
       )}
+
+      <DeliveryInstructions
+        shipment={shipment}
+        onSaved={(saved) => onShipmentChange({ ...shipment, ...saved })}
+      />
 
       <h3 className="mt-10 text-[20px] font-semibold">Tracking history</h3>
       <ol className="mt-5 border-l-2 border-line pl-6">
@@ -484,7 +597,13 @@ export default function TrackPage() {
               </div>
               <span className="text-[13px]">Updated {formatDate(state.shipment.updatedAt, true)} · refreshes automatically</span>
             </header>
-            <ShipmentResult shipment={state.shipment} mapsKey={settings ? settings.googleMapsApiKey || '' : null} clockOffset={clockOffset} settings={settings} />
+            <ShipmentResult
+              shipment={state.shipment}
+              mapsKey={settings ? settings.googleMapsApiKey || '' : null}
+              clockOffset={clockOffset}
+              settings={settings}
+              onShipmentChange={(shipment) => setState((current) => ({ ...current, shipment }))}
+            />
           </Card>
         )}
       </section>

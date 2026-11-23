@@ -78,6 +78,12 @@ the receiver get an email (if their email addresses are filled in) with the
 status, route and a "Track your shipment live" button. Each shipment's admin
 page lists what was sent under **Email notifications**.
 
+When a receiver saves delivery instructions on the tracking page, the current
+instruction is saved with the shipment and the company email in Admin → Settings
+is notified. Admins can see the saved instruction in the shipment record.
+For shipments on hold, set **Amount due for clearance** in the admin shipment
+form; the tracking page shows the amount and a contact-support button.
+
 How it works: a database trigger (`supabase/migrations/*_email_notifications.sql`)
 calls the `notify-shipment` Edge Function (`supabase/functions/`), which sends
 through the hosting mailbox `support@thejordanslogistics.com` over SMTP (SSL, port 465).
@@ -85,3 +91,5 @@ through the hosting mailbox `support@thejordanslogistics.com` over SMTP (SSL, po
 To switch it on, create that mailbox in cPanel → Email Accounts, then in
 Supabase → Edge Functions → Secrets add `SMTP_PASS` = the mailbox password.
 (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` and `NOTIFY_WEBHOOK_SECRET` are already set.)
+Apply new SQL files in `supabase/migrations/` to the Supabase project and deploy
+the updated `notify-shipment` Edge Function for these additions to work online.
