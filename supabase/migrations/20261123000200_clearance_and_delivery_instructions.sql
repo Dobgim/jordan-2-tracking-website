@@ -81,6 +81,7 @@ declare
   v_note text := btrim(coalesce(p_note, ''));
   v_id uuid;
   v_status text;
+  v_updated_at timestamptz;
 begin
   if v_instruction not in ('Leave at door', 'Hand it to me', 'Leave with a neighbor', 'Leave at reception', 'Other') then
     return jsonb_build_object('error', 'invalid_instruction');
@@ -103,14 +104,16 @@ begin
   update public.shipments
   set delivery_instruction = v_instruction,
       delivery_instruction_note = case when v_instruction = 'Other' then v_note else '' end
-  where id = v_id and status not in ('Delivered', 'Cancelled');
+  where id = v_id and status not in ('Delivered', 'Cancelled')
+  returning updated_at into v_updated_at;
 
   if not found then
     return jsonb_build_object('error', 'shipment_closed');
   end if;
   return jsonb_build_object(
     'deliveryInstruction', v_instruction,
-    'deliveryInstructionNote', case when v_instruction = 'Other' then v_note else '' end
+    'deliveryInstructionNote', case when v_instruction = 'Other' then v_note else '' end,
+    'updatedAt', v_updated_at
   );
 end;
 $$;
