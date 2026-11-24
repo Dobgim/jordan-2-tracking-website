@@ -83,7 +83,8 @@ instruction is saved with the shipment and the company email in Admin → Settin
 is notified. Admins can see the saved instruction in the shipment record.
 For shipments on hold, set **Amount due for clearance** in the admin shipment
 form and set that shipment's **Invoice currency** using a 3-letter ISO 4217
-code; the tracking page shows the formatted amount and a contact-support button.
+code (XAF is unavailable); the tracking page shows the formatted amount and a
+contact-support button.
 The tracking page uses the clearance panel as its single shipment-specific
 support panel and does not repeat the general support contacts or the generic
 on-hold alert.

@@ -430,7 +430,7 @@ export default function ShipmentForm() {
                   placeholder="USD"
                   required
                 />
-                <small className="form-note">Set separately for this shipment; this is also used on its invoice.</small>
+                <small className="form-note">Set separately for this shipment; this is also used on its invoice. XAF is not available.</small>
               </label>
               <label className="field">
                 <span>Amount due for clearance</span>

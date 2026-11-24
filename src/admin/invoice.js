@@ -31,10 +31,17 @@ export function formatMoney(value, currency = 'USD') {
   }
 }
 
+export function normaliseCurrencyCode(value) {
+  const currency = String(value || 'USD').trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(currency)) throw new Error('Enter a valid 3-letter currency code.');
+  if (currency === 'XAF') throw new Error('XAF is not an available currency. Choose another code.');
+  return currency;
+}
+
 /** Cleans the editable form values into what is stored. */
 export function normaliseInvoice(inv = {}) {
   return {
-    currency: String(inv.currency || 'USD').toUpperCase().slice(0, 3),
+    currency: normaliseCurrencyCode(inv.currency),
     taxRate: n(inv.taxRate),
     discount: n(inv.discount),
     amountPaid: n(inv.amountPaid),

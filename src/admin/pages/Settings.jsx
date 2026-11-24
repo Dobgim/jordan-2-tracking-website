@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useResource } from '../api.js';
 import { useAuth } from '../AdminApp.jsx';
 import { changePassword, getSettings, grantAdmin, listAdmins, removeAdmin, saveSettings } from '../data.js';
+import { normaliseCurrencyCode } from '../invoice.js';
 import { ErrorBox, Icon, Loading, PageHeader, formatDate } from '../ui.jsx';
 
 /* Everything configurable lives here and in the database - nothing is kept on a local machine. */
@@ -161,11 +162,17 @@ function CompanyCard({ initial }) {
 
   const submit = (e) => {
     e.preventDefault();
+    let currency;
+    try {
+      currency = normaliseCurrencyCode(form.currency);
+    } catch (err) {
+      return saver.setError(err.message);
+    }
     saver.run(
       () =>
         saveSettings({
           ...form,
-          currency: form.currency.trim().toUpperCase().slice(0, 3) || 'USD',
+          currency,
           tax_rate: Number(form.tax_rate) || 0,
         }),
       'Company details saved.'
@@ -205,7 +212,8 @@ function CompanyCard({ initial }) {
           <div className="form-grid">
             <label className="field">
               <span>Currency</span>
-              <input className="mono" maxLength={3} value={form.currency} onChange={set('currency')} />
+              <input className="mono" maxLength={3} value={form.currency} onChange={set('currency')} aria-describedby="currency-note" />
+              <small id="currency-note" className="form-note">3-letter currency code; XAF is not available.</small>
             </label>
             <label className="field">
               <span>Tax %</span>
