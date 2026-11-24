@@ -82,7 +82,11 @@ When a receiver saves delivery instructions on the tracking page, the current
 instruction is saved with the shipment and the company email in Admin → Settings
 is notified. Admins can see the saved instruction in the shipment record.
 For shipments on hold, set **Amount due for clearance** in the admin shipment
-form; the tracking page shows the amount and a contact-support button.
+form and set that shipment's **Invoice currency** using a 3-letter ISO 4217
+code; the tracking page shows the formatted amount and a contact-support button.
+The tracking page uses the clearance panel as its single shipment-specific
+support panel and does not repeat the general support contacts or the generic
+on-hold alert.
 On an individual shipment's admin page, **Send status reminder** emails the
 sender and receiver the latest shipment status and tracking link.
 

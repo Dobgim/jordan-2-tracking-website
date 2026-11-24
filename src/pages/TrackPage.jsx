@@ -138,50 +138,13 @@ function DeliveryPhotoDialog({ trackingNumber, event, onClose }) {
   );
 }
 
-/* "Need help?" box with the support email and phone number. */
-function ContactSupport({ settings }) {
-  const email = settings?.companyEmail || company.supportEmail;
-  const phone = settings?.companyPhone || company.supportPhone;
-  const tel = 'tel:' + String(phone).replace(/[^\d+]/g, '');
-  return (
-    <div className="mt-8 rounded-xl border border-line bg-mist p-5 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-navy text-white">
-            <Icon name="headset" size={20} />
-          </span>
-          <div>
-            <strong className="block font-heading text-[17px] text-navy">Need help with this shipment?</strong>
-            <span className="block text-[14px]">Our support team is here for you.</span>
-          </div>
-        </div>
-        <a
-          href={`mailto:${email}`}
-          className="inline-flex h-11 items-center gap-2 rounded-lg bg-brand px-5 font-heading text-[14px] font-semibold text-white transition-colors hover:bg-navy"
-        >
-          <Icon name="headset" size={17} /> Contact Support
-        </a>
-      </div>
-      <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-        <a href={`mailto:${email}`} className="flex min-w-0 items-center gap-3 rounded-lg bg-white px-4 py-3 text-navy hover:text-brand">
-          <Icon name="mail" size={18} className="shrink-0 text-brand" />
-          <span className="truncate text-[15px] font-medium">{email}</span>
-        </a>
-        <a href={tel} className="flex items-center gap-3 rounded-lg bg-white px-4 py-3 text-navy hover:text-brand">
-          <Icon name="phone" size={18} className="shrink-0 text-brand" />
-          <span className="text-[15px] font-medium">{phone}</span>
-        </a>
-      </div>
-    </div>
-  );
-}
-
 function ClearanceNotice({ shipment, settings }) {
   if (shipment.status !== 'On Hold' || !(Number(shipment.amountDue) > 0)) return null;
-  const currency = shipment.currency || 'USD';
+  const currency = String(shipment.currency || shipment.invoice?.currency || 'USD').toUpperCase();
   let amount;
   try {
-    amount = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(shipment.amountDue));
+    const formatted = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(shipment.amountDue));
+    amount = formatted.toUpperCase().includes(currency) ? formatted : `${formatted} ${currency}`;
   } catch {
     amount = `${currency} ${Number(shipment.amountDue).toFixed(2)}`;
   }
@@ -307,7 +270,7 @@ function ShipmentResult({ shipment, mapsKey, clockOffset, settings, onShipmentCh
         )}
       </div>
 
-      {exception && (
+      {exception && shipment.status !== 'On Hold' && (
         <p className="mt-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-[15px] text-orange-900">
           This shipment is currently <strong>{shipment.status.toLowerCase()}</strong>. Contact our support team for details.
         </p>
@@ -358,8 +321,6 @@ function ShipmentResult({ shipment, mapsKey, clockOffset, settings, onShipmentCh
           );
         })}
       </ol>
-
-      <ContactSupport settings={settings} />
 
       {(shipment.freightType || shipment.weight || shipment.service || shipment.pieceType) && (
         <dl className="mt-9 grid gap-3 sm:grid-cols-3">

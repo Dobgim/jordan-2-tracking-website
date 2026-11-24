@@ -419,9 +419,23 @@ export default function ShipmentForm() {
                 <textarea value={form.packageDescription} onChange={set('packageDescription')} placeholder="Describe the package contents" />
               </label>
               <label className="field">
+                <span>Invoice currency (3-letter code)</span>
+                <input
+                  type="text"
+                  value={invoiceOf(form).currency || 'USD'}
+                  onChange={(e) => setForm((f) => ({ ...f, invoice: { ...invoiceOf(f), currency: e.target.value.toUpperCase() } }))}
+                  maxLength={3}
+                  pattern="[A-Za-z]{3}"
+                  title="Enter a 3-letter ISO 4217 currency code, such as USD, EUR, or GBP."
+                  placeholder="USD"
+                  required
+                />
+                <small className="form-note">Set separately for this shipment; this is also used on its invoice.</small>
+              </label>
+              <label className="field">
                 <span>Amount due for clearance</span>
                 <input type="number" min="0" step="0.01" value={form.amountDue} onChange={set('amountDue')} placeholder="e.g. 255.00" />
-                <small className="form-note">Shown on the tracking page while the shipment is On Hold. Currency: {settings?.currency || 'USD'}.</small>
+                <small className="form-note">Shown on the tracking page while On Hold; keep this amount aligned with the itemized invoice.</small>
               </label>
             </div>
           </section>
