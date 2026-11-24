@@ -316,10 +316,14 @@ async function invokeShipmentNotification(type, shipmentId) {
   const { data, error } = await supabase.functions.invoke('notify-shipment', { body: { type, shipment_id: shipmentId } });
   if (error) {
     let msg = error.message;
+    const status = error.context?.status;
     try {
       msg = (await error.context.json()).error || msg;
     } catch {
       /* not a JSON error body */
+    }
+    if (type === 'reminder' && status === 403 && msg === 'forbidden') {
+      throw new Error('The reminder endpoint rejected this request. Deploy the latest notify-shipment function and confirm this account is an admin.');
     }
     throw friendlyError({ message: msg });
   }
