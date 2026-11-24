@@ -20,7 +20,8 @@ The layout is responsive from 320px phones up to wide desktops.
 
 Everything (shipments, tracking history, quotes, subscribers, settings, the
 Google Maps key and the admin login) is stored in the cloud in Supabase, so
-the website is just static files: no server or database to install.
+the website is primarily static files. Manual shipment reminders use a small
+PHP endpoint on the hosting account to send through the company's SMTP mailbox.
 
 **Shared hosting (Hostinger, cPanel, Namecheap…)**
 1. Upload the **contents** of the `dist/` folder into `public_html/`
@@ -29,7 +30,8 @@ the website is just static files: no server or database to install.
 2. Open `https://your-domain/admin` and sign in.
 
 **Vercel / Netlify** — import this folder; build command `npm run build`,
-output `dist`. (`vercel.json` is included.)
+output `dist`. (`vercel.json` is included.) Manual email reminders require
+PHP hosting and do not run on static-only hosting.
 
 **After going live**
 - Admin → Settings: fill in the company name, phone, email and address
@@ -91,12 +93,20 @@ on-hold alert.
 On an individual shipment's admin page, **Send status reminder** emails the
 sender and receiver the latest shipment status and tracking link.
 
-How it works: a database trigger (`supabase/migrations/*_email_notifications.sql`)
-calls the `notify-shipment` Edge Function (`supabase/functions/`), which sends
-through the hosting mailbox `support@thejordanslogistics.com` over SMTP (SSL, port 465).
+Automatic shipment emails and retries for failed automatic emails use the
+`notify-shipment` Supabase Edge Function. Manual status reminders use
+`public/api/send-reminder.php` and PHPMailer to send through the hosting SMTP
+mailbox; the PHP endpoint checks the admin session and loads the shipment using
+the signed-in admin's existing Supabase access, but Supabase does not send the
+reminder email.
 
-To switch it on, create that mailbox in cPanel → Email Accounts, then in
-Supabase → Edge Functions → Secrets add `SMTP_PASS` = the mailbox password.
-(`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` and `NOTIFY_WEBHOOK_SECRET` are already set.)
-Apply new SQL files in `supabase/migrations/` to the Supabase project and deploy
-the updated `notify-shipment` Edge Function for these additions to work online.
+To enable hosting-sent reminders, copy `public/api/reminder-config.example.php`
+to `/home/ACCOUNT/private/reminder-config.php` (outside `public_html`) and set
+the correct SMTP host, port, mailbox username and password. Keep this private
+file out of the website ZIP and source control. The hosting needs PHP with cURL
+and OpenSSL enabled. The reminder endpoint is only accessible to signed-in
+admins; it sends to the sender/receiver email addresses saved on that shipment.
+
+Automatic email notifications still require the mailbox in cPanel → Email
+Accounts, the SMTP secrets in Supabase → Edge Functions → Secrets, and the
+`notify-shipment` Edge Function deployed to Supabase.

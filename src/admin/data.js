@@ -316,14 +316,10 @@ async function invokeShipmentNotification(type, shipmentId) {
   const { data, error } = await supabase.functions.invoke('notify-shipment', { body: { type, shipment_id: shipmentId } });
   if (error) {
     let msg = error.message;
-    const status = error.context?.status;
     try {
       msg = (await error.context.json()).error || msg;
     } catch {
       /* not a JSON error body */
-    }
-    if (type === 'reminder' && status === 403 && msg === 'forbidden') {
-      throw new Error('The reminder endpoint rejected this request. Deploy the latest notify-shipment function and confirm this account is an admin.');
     }
     throw friendlyError({ message: msg });
   }
@@ -334,7 +330,32 @@ export async function resendFailedEmails(shipmentId) {
   return invokeShipmentNotification('resend', shipmentId);
 }
 
-/** Sends the current shipment status to its sender and receiver. */
+/** Sends the current shipment status through the hosting SMTP endpoint. */
 export async function sendShipmentReminder(shipmentId) {
-  return invokeShipmentNotification('reminder', shipmentId);
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw friendlyError(sessionError);
+  if (!session?.access_token) throw new Error('Your session has expired. Please sign in again.');
+
+  let response;
+  try {
+    response = await fetch('/api/send-reminder.php', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ shipment_id: shipmentId }),
+    });
+  } catch {
+    throw new Error('Could not reach the email service on this website. Check your connection and try again.');
+  }
+
+  let result;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error('The email service returned an invalid response.');
+  }
+  if (!response.ok) throw new Error(result?.error || `The email service returned status ${response.status}.`);
+  return result;
 }

@@ -7,3 +7,4 @@ dist/
 .env.*
 !.env.example
 supabase/.temp/
+public/api/reminder-config.php
