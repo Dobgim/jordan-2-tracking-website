@@ -143,10 +143,9 @@ function ClearanceNotice({ shipment, settings }) {
   const currency = String(shipment.currency || shipment.invoice?.currency || 'USD').toUpperCase();
   let amount;
   try {
-    const formatted = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(shipment.amountDue));
-    amount = formatted.toUpperCase().includes(currency) ? formatted : `${formatted} ${currency}`;
+    amount = new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(shipment.amountDue));
   } catch {
-    amount = `${currency} ${Number(shipment.amountDue).toFixed(2)}`;
+    amount = currency === 'USD' ? `$${Number(shipment.amountDue).toFixed(2)}` : `${currency} ${Number(shipment.amountDue).toFixed(2)}`;
   }
   const email = settings?.companyEmail || company.supportEmail;
 

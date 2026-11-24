@@ -25,6 +25,16 @@ import { generateTrackingId } from '../../lib/trackingId.js';
 import { ErrorBox, FREIGHT_TYPES, Icon, Loading, PageHeader, SERVICES, STATUSES, StatusBadge, formatDate } from '../ui.jsx';
 
 const PIECE_TYPES = ['Box', 'Envelope', 'Pallet', 'Crate', 'Carton', 'Container', 'Vehicle', 'Other'];
+const FALLBACK_CURRENCIES = [
+  'AED', 'AUD', 'BRL', 'CAD', 'CHF', 'CNY', 'DKK', 'EUR', 'GBP', 'HKD', 'IDR', 'INR', 'JPY', 'KRW',
+  'KWD', 'MXN', 'MYR', 'NGN', 'NOK', 'NZD', 'PHP', 'PLN', 'QAR', 'SAR', 'SEK', 'SGD', 'THB', 'TRY',
+  'TWD', 'USD', 'VND', 'ZAR',
+];
+const CURRENCY_CODES = (
+  typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('currency') : FALLBACK_CURRENCIES
+)
+  .filter((code) => code !== 'XAF')
+  .sort();
 
 
 const toLocalInput = (iso) => {
@@ -172,13 +182,18 @@ export default function ShipmentForm() {
     const freightType = e.target.value;
     setForm((f) => ({ ...f, freightType, speedKmh: DEFAULT_SPEEDS[freightType] ?? f.speedKmh }));
   };
-  const invoiceOf = (f) => f.invoice || blankInvoice(settings);
+  const invoiceOf = (f) => f?.invoice || blankInvoice(settings);
   const setInvoice = (key) => (e) => setForm((f) => ({ ...f, invoice: { ...invoiceOf(f), [key]: e.target.value } }));
   const setItem = (index, key) => (e) =>
     setForm((f) => {
       const inv = invoiceOf(f);
       return { ...f, invoice: { ...inv, items: inv.items.map((it, i) => (i === index ? { ...it, [key]: e.target.value } : it)) } };
     });
+  const invoiceCurrency = String(invoiceOf(form).currency || 'USD').toUpperCase();
+  const currencyOptions =
+    invoiceCurrency && invoiceCurrency !== 'XAF' && !CURRENCY_CODES.includes(invoiceCurrency)
+      ? [...CURRENCY_CODES, invoiceCurrency].sort()
+      : CURRENCY_CODES;
   const addItem = () =>
     setForm((f) => {
       const inv = invoiceOf(f);
@@ -419,23 +434,21 @@ export default function ShipmentForm() {
                 <textarea value={form.packageDescription} onChange={set('packageDescription')} placeholder="Describe the package contents" />
               </label>
               <label className="field">
-                <span>Invoice currency (3-letter code)</span>
-                <input
-                  type="text"
-                  value={invoiceOf(form).currency || 'USD'}
-                  onChange={(e) => setForm((f) => ({ ...f, invoice: { ...invoiceOf(f), currency: e.target.value.toUpperCase() } }))}
-                  maxLength={3}
-                  pattern="[A-Za-z]{3}"
-                  title="Enter a 3-letter ISO 4217 currency code, such as USD, EUR, or GBP."
-                  placeholder="USD"
-                  required
-                />
-                <small className="form-note">Set separately for this shipment; this is also used on its invoice. XAF is not available.</small>
-              </label>
-              <label className="field">
                 <span>Amount due for clearance</span>
                 <input type="number" min="0" step="0.01" value={form.amountDue} onChange={set('amountDue')} placeholder="e.g. 255.00" />
                 <small className="form-note">Shown on the tracking page while On Hold; keep this amount aligned with the itemized invoice.</small>
+              </label>
+              <label className="field span-2">
+                <span>Invoice currency</span>
+                <select
+                  value={invoiceCurrency === 'XAF' ? '' : invoiceCurrency}
+                  onChange={(e) => setForm((f) => ({ ...f, invoice: { ...invoiceOf(f), currency: e.target.value } }))}
+                  required
+                >
+                  <option value="" disabled>Choose a currency</option>
+                  {currencyOptions.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
+                </select>
+                <small className="form-note">Choose the currency for this shipment and its invoice. XAF is not available.</small>
               </label>
             </div>
           </section>
