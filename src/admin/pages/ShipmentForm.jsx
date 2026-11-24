@@ -15,6 +15,7 @@ import {
   listEmailLog,
   removeEventPhoto,
   resendFailedEmails,
+  sendShipmentReminder,
   setEventPhoto,
   updateShipment,
 } from '../data.js';
@@ -634,6 +635,7 @@ export default function ShipmentForm() {
 function EmailLog({ shipmentId, status }) {
   const [rows, setRows] = useState(null);
   const [resending, setResending] = useState(false);
+  const [reminding, setReminding] = useState(false);
   const [notice, setNotice] = useState(null);
 
   const load = () => listEmailLog(shipmentId).then(setRows).catch(() => setRows([]));
@@ -678,17 +680,36 @@ function EmailLog({ shipmentId, status }) {
     }
   };
 
+  const remind = async () => {
+    setReminding(true);
+    setNotice(null);
+    try {
+      const res = await sendShipmentReminder(shipmentId);
+      if (res?.sent && !res.failed) setNotice({ ok: true, text: `Sent ${res.sent} status reminder${res.sent > 1 ? 's' : ''}.` });
+      else if (res?.sent) setNotice({ ok: false, text: `Sent ${res.sent}, ${res.failed} failed: ${res.error || 'unknown error'}` });
+      else setNotice({ ok: false, text: res?.error || 'No shipment contact email could be reached.' });
+    } catch (err) {
+      setNotice({ ok: false, text: err.message });
+    } finally {
+      setReminding(false);
+      load();
+    }
+  };
+
   return (
     <section className="card">
       <div className="card__head">
         <h2>Email notifications</h2>
-        {pending > 0 ? (
-          <button type="button" className="btn btn--primary btn--sm" onClick={resend} disabled={resending}>
-            {resending ? 'Sending…' : `Resend failed emails (${pending})`}
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 8 }}>
+          <button type="button" className="btn btn--primary btn--sm" onClick={remind} disabled={reminding || resending}>
+            {reminding ? 'Sending…' : 'Send status reminder'}
           </button>
-        ) : (
-          <span className="muted small">Sender &amp; receiver</span>
-        )}
+          {pending > 0 && (
+            <button type="button" className="btn btn--ghost btn--sm" onClick={resend} disabled={resending || reminding}>
+              {resending ? 'Sending…' : `Resend failed emails (${pending})`}
+            </button>
+          )}
+        </div>
       </div>
       <div className="card__body">
         {notice && (

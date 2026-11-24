@@ -83,6 +83,8 @@ instruction is saved with the shipment and the company email in Admin → Settin
 is notified. Admins can see the saved instruction in the shipment record.
 For shipments on hold, set **Amount due for clearance** in the admin shipment
 form; the tracking page shows the amount and a contact-support button.
+On an individual shipment's admin page, **Send status reminder** emails the
+sender and receiver the latest shipment status and tracking link.
 
 How it works: a database trigger (`supabase/migrations/*_email_notifications.sql`)
 calls the `notify-shipment` Edge Function (`supabase/functions/`), which sends

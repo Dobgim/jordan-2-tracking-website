@@ -11,8 +11,8 @@
 //   SMTP_PASS              the mailbox password
 //   SMTP_FROM              optional, defaults to SMTP_USER
 //
-// The dashboard also calls it ("Resend failed emails") with the admin login token
-// and { type: "resend", shipment_id } to retry failed shipment and instruction emails.
+// The dashboard also calls it with an admin login token to retry failed emails
+// or send a current-status reminder to the shipment contacts.
 import nodemailer from 'npm:nodemailer@6.9.16';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
@@ -116,11 +116,12 @@ Deno.serve(async (req) => {
   const secret = env('NOTIFY_WEBHOOK_SECRET');
   const fromTrigger = !!secret && req.headers.get('x-webhook-secret') === secret;
   const resend = type === 'resend';
-  if (!(fromTrigger || (resend && (await isAdminRequest(req))))) return reply({ error: 'forbidden' }, 403);
+  const reminder = type === 'reminder';
+  if (!(fromTrigger || ((resend || reminder) && (await isAdminRequest(req))))) return reply({ error: 'forbidden' }, 403);
   if (!shipment_id) return reply({ error: 'missing shipment' }, 400);
 
   // give the dashboard a moment to save the tracking events that go with the change
-  if (!resend) await new Promise((r) => setTimeout(r, 4000));
+  if (!resend && !reminder) await new Promise((r) => setTimeout(r, 4000));
 
   const [{ data: s }, { data: co }, { data: ev }, { data: past }] = await Promise.all([
     db.from('shipments').select('*').eq('id', shipment_id).maybeSingle(),
@@ -141,13 +142,14 @@ Deno.serve(async (req) => {
     .filter((r) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email));
   // same address for both parties: one email
   let unique = recipients.filter((r, i) => recipients.findIndex((x) => x.email.toLowerCase() === r.email.toLowerCase()) === i);
+  if (reminder && !unique.length) return reply({ sent: 0, failed: 0, error: 'No valid sender or receiver email address is available.' }, 422);
 
   // Resend: only people whose most recent email failed. Anyone who never received
   // the "shipment created" email gets that one (it shows the current status too);
   // everyone else gets an update with the current status.
   const history = (email: string) =>
     (past ?? []).filter(
-      (p: any) => String(p.recipient).toLowerCase() === email.toLowerCase() && ['created', 'status'].includes(p.kind)
+      (p: any) => String(p.recipient).toLowerCase() === email.toLowerCase() && ['created', 'status', 'reminder'].includes(p.kind)
     );
   const instructionHistory = (past ?? []).filter((p: any) => p.kind === 'delivery_instruction');
   const latestInstruction = instructionHistory[instructionHistory.length - 1];
@@ -159,7 +161,8 @@ Deno.serve(async (req) => {
     });
     if (!unique.length && !resendInstruction) return reply({ sent: 0, failed: 0, reason: 'nothing to resend' });
   }
-  const kindFor = (email: string): 'created' | 'status' => {
+  const kindFor = (email: string): 'created' | 'status' | 'reminder' => {
+    if (reminder) return 'reminder';
     if (!resend) return type === 'created' ? 'created' : 'status';
     return history(email).some((p: any) => p.kind === 'created' && p.ok) ? 'status' : 'created';
   };
@@ -168,7 +171,9 @@ Deno.serve(async (req) => {
       ? `Shipment ${s.tracking_number} created — ${s.origin} to ${s.destination}`
       : kind === 'delivery_instruction'
         ? `Delivery instruction for shipment ${s.tracking_number}`
-        : `Shipment ${s.tracking_number} is now ${s.status}`;
+        : kind === 'reminder'
+          ? `Reminder: shipment ${s.tracking_number} — ${s.status}`
+          : `Shipment ${s.tracking_number} is now ${s.status}`;
 
   const log = (to: string, kind: string, ok: boolean, error = '') =>
     db.from('email_log').insert({ shipment_id, recipient: to, subject: subjectFor(kind), kind, ok, error: error.slice(0, 500) });
@@ -237,17 +242,30 @@ Deno.serve(async (req) => {
     const kind = kindFor(r.email);
     const created = kind === 'created';
     const subject = subjectFor(kind);
-    const intro = created
-      ? `A new shipment ${r.role === 'sender' ? 'you are sending' : 'addressed to you'} has been created. Your tracking number is <strong>${esc(s.tracking_number)}</strong>.`
-      : `Your shipment <strong>${esc(s.tracking_number)}</strong> ${esc(STATUS_TEXT[s.status] || `is now ${s.status}.`)}`;
+    const intro = reminder
+      ? `This is a reminder to check the latest progress for shipment <strong>${esc(s.tracking_number)}</strong>. Its current status is <strong>${esc(s.status)}</strong>.`
+      : created
+        ? `A new shipment ${r.role === 'sender' ? 'you are sending' : 'addressed to you'} has been created. Your tracking number is <strong>${esc(s.tracking_number)}</strong>.`
+        : `Your shipment <strong>${esc(s.tracking_number)}</strong> ${esc(STATUS_TEXT[s.status] || `is now ${s.status}.`)}`;
     try {
       await transport.sendMail({
         from,
         to: r.email,
         replyTo: company.company_email || undefined,
         subject,
-        html: emailHtml({ heading: created ? 'Your shipment has been created' : `Status update: ${s.status}`, intro, s, role: r.role, name: r.name, trackUrl, latest, co: company }),
-        text: `${subject}\n\nTrack it live: ${trackUrl}`,
+        html: emailHtml({
+          heading: reminder ? 'Shipment status reminder' : created ? 'Your shipment has been created' : `Status update: ${s.status}`,
+          intro,
+          s,
+          role: r.role,
+          name: r.name,
+          trackUrl,
+          latest,
+          co: company,
+        }),
+        text: reminder
+          ? `${subject}\n\nCurrent status: ${s.status}\nFrom: ${s.origin}\nTo: ${s.destination}\n\nCheck the latest progress: ${trackUrl}`
+          : `${subject}\n\nTrack it live: ${trackUrl}`,
       });
       sent++;
       if (resend) {

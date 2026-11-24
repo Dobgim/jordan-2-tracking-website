@@ -312,8 +312,8 @@ export async function listEmailLog(shipmentId) {
 }
 
 /** Sends one up-to-date email to every sender/receiver whose last email failed. */
-export async function resendFailedEmails(shipmentId) {
-  const { data, error } = await supabase.functions.invoke('notify-shipment', { body: { type: 'resend', shipment_id: shipmentId } });
+async function invokeShipmentNotification(type, shipmentId) {
+  const { data, error } = await supabase.functions.invoke('notify-shipment', { body: { type, shipment_id: shipmentId } });
   if (error) {
     let msg = error.message;
     try {
@@ -324,4 +324,13 @@ export async function resendFailedEmails(shipmentId) {
     throw friendlyError({ message: msg });
   }
   return data;
+}
+
+export async function resendFailedEmails(shipmentId) {
+  return invokeShipmentNotification('resend', shipmentId);
+}
+
+/** Sends the current shipment status to its sender and receiver. */
+export async function sendShipmentReminder(shipmentId) {
+  return invokeShipmentNotification('reminder', shipmentId);
 }
